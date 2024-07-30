@@ -13,9 +13,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: true,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Color.fromARGB(255, 45, 133, 248)),
+        colorScheme:
+            ColorScheme.fromSeed(seedColor: Color.fromARGB(255, 45, 133, 248)),
         useMaterial3: true,
       ),
       home: const Dashboard(),
