@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
             ColorScheme.fromSeed(seedColor: Color.fromARGB(255, 45, 133, 248)),
         useMaterial3: true,
       ),
-      home: const DetailsDisplayingScreen(),
+      home:  DetailsDisplayingScreen(),
     );
   }
 }
