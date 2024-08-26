@@ -30,7 +30,8 @@ class _DetailsFetchingScreenState extends State<DetailsFetchingScreen> {
 
   // Function to generate a random CAPTCHA
   String generateCaptcha() {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const characters =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz';
     Random random = Random();
     return String.fromCharCodes(Iterable.generate(
         6, (_) => characters.codeUnitAt(random.nextInt(characters.length))));
@@ -63,7 +64,8 @@ class _DetailsFetchingScreenState extends State<DetailsFetchingScreen> {
         captchaCode = generateCaptcha();
         errorMessage = ''; // Clear any error message
       } else {
-        errorMessage = 'The current CAPTCHA is already used. Please refresh the page.';
+        errorMessage =
+            'The current CAPTCHA is already used. Please refresh the page.';
       }
     });
   }
@@ -121,7 +123,7 @@ class _DetailsFetchingScreenState extends State<DetailsFetchingScreen> {
                   child: Container(
                     height: screenHeight * 0.08,
                     width: screenWidth * 0.5,
-                    color: Colors.amber,
+                    color: const Color.fromARGB(255, 224, 224, 224),
                     alignment: Alignment.center,
                     child: Text(
                       captchaCode, // Display the generated CAPTCHA here

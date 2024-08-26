@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_const_constructors
+// ignore_for_file: prefer_const_constructors, unused_import
 
 import 'package:flutter/material.dart';
 import 'package:pay_dart/UI_Screens/Institutions.dart';
@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
             ColorScheme.fromSeed(seedColor: Color.fromARGB(255, 45, 133, 248)),
         useMaterial3: true,
       ),
-      home:  DetailsDisplayingScreen(),
+      home: DetailsDisplayingScreen(),
     );
   }
 }

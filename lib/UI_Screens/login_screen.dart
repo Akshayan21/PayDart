@@ -136,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Text("Pay Fees",
                     style: GoogleFonts.poppins(
                         color: Colors.white,
-                        fontSize: 20,
+                        fontSize: screenHeight * 0.02,
                         fontWeight: FontWeight.w500)),
               ),
             ),
