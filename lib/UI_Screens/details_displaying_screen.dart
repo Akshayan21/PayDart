@@ -1,9 +1,10 @@
-// ignore_for_file: prefer_const_constructors, unnecessary_type_check
+// ignore_for_file: prefer_const_constructors, avoid_print
 
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:pay_dart/services/data_fetching.dart';
 
 class DetailsDisplayingScreen extends StatefulWidget {
   const DetailsDisplayingScreen({super.key});
@@ -13,558 +14,134 @@ class DetailsDisplayingScreen extends StatefulWidget {
       _DetailsDisplayingScreenState();
 }
 
-class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
-    with TickerProviderStateMixin {
-  late final TabController _tabController;
-  List<DataFetching> dataList = [];
-  API? apiData;
-  List<bool> isCheckedList = [];
-  List<bool> isExpandedList = [];
-  bool isLoading = true;
-  bool hasError = false;
+class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen> {
+  Future<Map<String, dynamic>>? futureDetails;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    fetchData();
-    fetchInstitutionDetails();
+    futureDetails = _fetchDetails();
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  Future<void> fetchData() async {
-    final url = Uri.parse(
-        'https://mocki.io/v1/15807f54-0b33-4804-a2b4-cec09173faef'); // Replace with your API URL
+  Future<Map<String, dynamic>> _fetchDetails() async {
+    DataFetchingService service = DataFetchingService();
     try {
-      final response =
-          await http.get(url).timeout(Duration(seconds: 10), onTimeout: () {
-        setState(() {
-          hasError = true;
-          isLoading = false;
-        });
-        print("Request timed out");
-        return http.Response(
-            'Error', 408); // Return an empty response for timeout
-      });
-
-      if (response.statusCode == 200) {
-        List<dynamic> jsonResponse = json.decode(response.body);
-
-        if (jsonResponse is List) {
-          setState(() {
-            dataList = jsonResponse
-                .map((item) => DataFetching.fromJson(item))
-                .toList();
-
-            // Initialize isCheckedList and isExpandedList based on dataList length
-            isCheckedList = List<bool>.filled(dataList.length, false);
-            isExpandedList = List<bool>.filled(dataList.length, false);
-
-            isLoading = false;
-          });
-        } else {
-          throw Exception('Unexpected JSON structure');
-        }
-      } else {
-        print('Failed to load data: ${response.statusCode}');
-        setState(() {
-          hasError = true;
-          isLoading = false;
-        });
-      }
+      return await service.fetchDetails().timeout(Duration(seconds: 20));
+    } on SocketException catch (_) {
+      print('No Internet connection.');
+      throw Exception(
+          'No Internet connection. Please check your network settings.');
+    } on TimeoutException catch (_) {
+      print('Request timed out.');
+      throw Exception('Request timed out. Please try again later.');
     } catch (e) {
-      print('Error fetching data: $e');
-      setState(() {
-        hasError = true;
-        isLoading = false;
-      });
-    }
-  }
-
-  Future<void> fetchInstitutionDetails() async {
-    final url =
-        Uri.parse('https://mocki.io/v1/212210e3-4cd9-4d02-a489-eda5ffce9093');
-
-    try {
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        // Parse the JSON response
-        final Map<String, dynamic> jsonResponse = json.decode(response.body);
-        setState(() {
-          apiData = API.fromJson(jsonResponse);
-        });
-      } else {
-        // Handle errors
-        setState(() {
-          hasError = true;
-        });
-        print('Failed to load institution details: ${response.statusCode}');
-      }
-    } catch (e) {
-      setState(() {
-        hasError = true;
-      });
-      print('Error occurred while fetching institution details: $e');
+      print('An error occurred: $e');
+      throw Exception('An unexpected error occurred. Please try again.');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Padding(
-              padding:
-                  const EdgeInsets.only(top: 50.0, left: 20.0, right: 300.0),
-              child: Text(
-                "Details",
-                style: GoogleFonts.poppins(
-                  fontSize: screenHeight * 0.03,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            SizedBox(height: screenHeight * 0.03),
-            // Details Section (Upper Container)
-            Container(
-              height: screenHeight * 0.55,
-              width: screenWidth * 0.9,
-              decoration: BoxDecoration(
-                color: Color.fromARGB(255, 216, 216, 216),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Container(
-                margin: EdgeInsets.only(left: 10, top: 20),
-                child: isLoading
-                    ? Center(child: CircularProgressIndicator())
-                    : hasError
-                        ? Center(
-                            child: Text(
-                              "Error loading data, please try again",
-                              style: GoogleFonts.poppins(
-                                  fontSize: screenHeight * 0.02),
-                            ),
-                          )
-                        : apiData != null
-                            ? Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text("Institution: ${apiData!.institution}",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: screenHeight * 0.02,
-                                        fontWeight: FontWeight.w400,
-                                      )),
-                                  SizedBox(height: screenHeight * 0.01),
-                                  Text("Name: ${apiData!.name}",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: screenHeight * 0.02,
-                                        fontWeight: FontWeight.w400,
-                                      )),
-                                  SizedBox(height: screenHeight * 0.01),
-                                  Text("D.O.B: ${apiData!.dob}",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: screenHeight * 0.02,
-                                        fontWeight: FontWeight.w400,
-                                      )),
-                                  SizedBox(height: screenHeight * 0.01),
-                                  Text("Student ID: ${apiData!.studentId}",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: screenHeight * 0.02,
-                                        fontWeight: FontWeight.w400,
-                                      )),
-                                  SizedBox(height: screenHeight * 0.01),
-                                  Text(
-                                    "Active Status: ${apiData!.activestatus}",
-                                    style: GoogleFonts.poppins(
-                                        fontSize: screenHeight * 0.02,
-                                        fontWeight: FontWeight.w400),
-                                  ),
-                                  SizedBox(height: screenHeight * 0.01),
-                                  Text("Course: ${apiData!.course}",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: screenHeight * 0.02,
-                                        fontWeight: FontWeight.w400,
-                                      )),
-                                  SizedBox(height: screenHeight * 0.01),
-                                  Text(
-                                    "Degree Type: ${apiData!.degreetype}",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: screenHeight * 0.02,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                  SizedBox(height: screenHeight * 0.01),
-                                  Text(
-                                    "7.5 SCH: ${apiData!.sch}",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: screenHeight * 0.02,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                  SizedBox(height: screenHeight * 0.01),
-                                  Text(
-                                    "FG: ${apiData!.fg}",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: screenHeight * 0.02,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                  SizedBox(height: screenHeight * 0.01),
-                                  Text(
-                                    "Post Metric: ${apiData!.postmetric}",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: screenHeight * 0.02,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                  SizedBox(height: screenHeight * 0.01),
-                                  Text(
-                                    "Department: ${apiData!.department}",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: screenHeight * 0.02,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                  SizedBox(height: screenHeight * 0.01),
-                                  Text(
-                                    "Batch: ${apiData!.batch}",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: screenHeight * 0.02,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                  SizedBox(height: screenHeight * 0.01),
-                                  Text(
-                                    "Active Status: ${apiData!.active}",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: screenHeight * 0.02,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Center(
-                                child: Text(
-                                  "No data available",
-                                  style: GoogleFonts.poppins(
-                                      fontSize: screenHeight * 0.02),
-                                ),
-                              ),
-              ),
-            ),
-            SizedBox(height: screenHeight * 0.02),
-            // Tabs Section
-            Column(
-              children: [
-                TabBar(
-                  controller: _tabController,
-                  labelColor: Colors.black,
-                  indicatorColor: Colors.blue,
-                  tabs: const <Widget>[
-                    Tab(text: "Upcoming\n Payment"),
-                    Tab(text: "Payment\n History"),
-                    Tab(text: "Additional"),
-                  ],
-                ),
-                SizedBox(
-                  height: screenHeight * 0.3, // Adjust height as needed
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: <Widget>[
-                      // Upcoming Payment Section with Expandable Card
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Center(
-                          child: isLoading
-                              ? CircularProgressIndicator()
-                              : hasError
-                                  ? Text("Error loading data, please try again")
-                                  : ListView.builder(
-                                      itemCount: dataList.length,
-                                      itemBuilder: (context, index) {
-                                        // Check if isCheckedList and isExpandedList have been initialized
-                                        if (isCheckedList.isEmpty ||
-                                            isExpandedList.isEmpty) {
-                                          return Container(); // Or return a placeholder widget
-                                        }
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: futureDetails,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData) {
+            return Center(child: Text('No data found'));
+          }
 
-                                        return Card(
-                                          elevation: 3,
-                                          margin: EdgeInsets.symmetric(
-                                              horizontal: 16, vertical: 8),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                          ),
-                                          child: SingleChildScrollView(
-                                            child: Column(
-                                              mainAxisSize: MainAxisSize.max,
-                                              children: [
-                                                ListTile(
-                                                  leading: Checkbox(
-                                                    value: isCheckedList[index],
-                                                    onChanged: (bool? value) {
-                                                      setState(() {
-                                                        isCheckedList[index] =
-                                                            value ?? false;
-                                                        isExpandedList[index] =
-                                                            isCheckedList[
-                                                                index];
-                                                      });
-                                                    },
-                                                  ),
-                                                  title: Text(
-                                                    dataList[index].term,
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize:
-                                                          screenHeight * 0.02,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                  trailing: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      Text("₹",
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                            fontSize:
-                                                                screenHeight *
-                                                                    0.02,
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                            color: Colors.black,
-                                                          )),
-                                                      Text(
-                                                        dataList[index]
-                                                            .amount
-                                                            .toString(),
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          fontSize:
-                                                              screenHeight *
-                                                                  0.02,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                          color: Colors.black,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  subtitle: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                          "Due Date: ${dataList[index].dueDate}"),
-                                                      Text(
-                                                          "Duration: ${dataList[index].duration}"),
-                                                    ],
-                                                  ),
-                                                ),
-                                                // Expandable Section
-                                                if (isExpandedList[index])
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                            16.0),
-                                                    child: Column(
-                                                      children: [
-                                                        Text(
-                                                          "Pay Partial",
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                            fontSize:
-                                                                screenHeight *
-                                                                    0.02,
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                          ),
-                                                        ),
-                                                        SizedBox(height: 8),
-                                                        TextFormField(
-                                                          initialValue:
-                                                              dataList[index]
-                                                                  .amount
-                                                                  .toString(),
-                                                          keyboardType:
-                                                              TextInputType
-                                                                  .number,
-                                                          decoration:
-                                                              InputDecoration(
-                                                            prefixText: "₹ ",
-                                                            border:
-                                                                OutlineInputBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          8.0),
-                                                            ),
-                                                          ),
-                                                          onChanged: (value) {
-                                                            setState(() {
-                                                              // Update the amount for each item if needed
-                                                              // Handle custom logic here if required
-                                                            });
-                                                          },
-                                                        ),
-                                                        SizedBox(height: 16),
-                                                        Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .spaceBetween,
-                                                          children: [
-                                                            ElevatedButton.icon(
-                                                              icon: Icon(Icons
-                                                                  .payment),
-                                                              label: Text(
-                                                                  "Pay Now"),
-                                                              onPressed: () {
-                                                                // API CALL: Make API call here to initiate payment with dataList[index].amount
-                                                              },
-                                                              style:
-                                                                  ElevatedButton
-                                                                      .styleFrom(
-                                                                backgroundColor:
-                                                                    Colors
-                                                                        .orange,
-                                                              ),
-                                                            ),
-                                                            Text(
-                                                              "₹ ${dataList[index].amount}",
-                                                              style: GoogleFonts
-                                                                  .poppins(
-                                                                fontSize:
-                                                                    screenHeight *
-                                                                        0.02,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                                color: Colors
-                                                                    .black,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                        ),
-                      ),
-                      // Payment History Section
-                      Center(
-                        child: Text("Payment History Section"),
-                      ),
-                      // Additional Section
-                      Center(
-                        child: Text("Additional Section"),
+          Map<String, dynamic> details = snapshot.data!;
+
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(
+                      top: 50.0, left: 20.0, right: 300.0),
+                  child: Text(
+                    "Details",
+                    style: GoogleFonts.poppins(
+                      fontSize: screenHeight * 0.03,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                SizedBox(height: screenHeight * 0.01),
+                Container(
+                  margin: EdgeInsets.symmetric(horizontal: 5),
+                  height: screenHeight * 0.55,
+                  width: screenWidth * 0.9,
+                  decoration: BoxDecoration(
+                    color: Color.fromARGB(255, 243, 242, 242),
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.5),
+                        spreadRadius: 3,
+                        blurRadius: 5,
+                        offset: Offset(2, 5),
                       ),
                     ],
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.only(left: 10, top: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildDetailRow("Institution:", details['institution'],
+                            screenHeight),
+                        _buildDetailRow("Name:", details['name'], screenHeight),
+                        _buildDetailRow("D.O.B:", details['dob'], screenHeight),
+                        _buildDetailRow(
+                            "Student ID:", details['studentId'], screenHeight),
+                        _buildDetailRow("Active Status:",
+                            details['activeStatus'], screenHeight),
+                        _buildDetailRow(
+                            "Course:", details['course'], screenHeight),
+                        _buildDetailRow("Degree Type:", details['degreeType'],
+                            screenHeight),
+                        _buildDetailRow(
+                            "7.5 SCH:", details['7.5 SCH'], screenHeight),
+                        _buildDetailRow("FG:", details['fg'], screenHeight),
+                        _buildDetailRow("Post Metric:", details['postMatric'],
+                            screenHeight),
+                        _buildDetailRow("Dept:", details['Dept'], screenHeight),
+                        _buildDetailRow(
+                            "Batch:", details['batch'], screenHeight),
+                        _buildDetailRow(
+                            "Active:", details['active'], screenHeight),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
-}
 
-// Data fetching model class
-class DataFetching {
-  final String term;
-  final int amount;
-  final String dueDate;
-  final String duration;
-
-  DataFetching({
-    required this.term,
-    required this.amount,
-    required this.dueDate,
-    required this.duration,
-  });
-
-  factory DataFetching.fromJson(Map<String, dynamic> json) {
-    return DataFetching(
-      term: json['term'] ?? 'N/A',
-      amount: json['amount'] ?? 0,
-      dueDate: json['dueDate'] ?? 'N/A',
-      duration: json['duration'] ?? 'N/A',
-    );
-  }
-}
-
-// API data model class
-class API {
-  final String institution;
-  final String name;
-  final String dob;
-  final String studentId;
-  final String activestatus;
-  final String course;
-  final String degreetype;
-  final String sch;
-  final String fg;
-  final String postmetric;
-  final String department;
-  final String batch;
-  final String active;
-
-  API({
-    required this.institution,
-    required this.name,
-    required this.dob,
-    required this.studentId,
-    required this.activestatus,
-    required this.course,
-    required this.degreetype,
-    required this.sch,
-    required this.fg,
-    required this.postmetric,
-    required this.department,
-    required this.batch,
-    required this.active,
-  });
-
-  factory API.fromJson(Map<String, dynamic> json) {
-    return API(
-      institution: json['institution'] ?? 'N/A',
-      name: json['name'] ?? 'N/A',
-      dob: json['dob'] ?? 'N/A',
-      studentId: json['studentId'] ?? 'N/A',
-      activestatus: json['activestatus'] ?? 'N/A',
-      course: json['course'] ?? 'N/A',
-      degreetype: json['degreetype'] ?? 'N/A',
-      sch: json['sch'] ?? 'N/A',
-      fg: json['fg'] ?? 'N/A',
-      postmetric: json['postmetric'] ?? 'N/A',
-      department: json['department'] ?? 'N/A',
-      batch: json['batch'] ?? 'N/A',
-      active: json['active'] ?? 'N/A',
+  Widget _buildDetailRow(String label, String? value, double screenHeight) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "$label ${value ?? ''}",
+          style: GoogleFonts.poppins(
+            fontSize: screenHeight * 0.02,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        SizedBox(height: screenHeight * 0.01),
+      ],
     );
   }
 }
