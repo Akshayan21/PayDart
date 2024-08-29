@@ -17,6 +17,7 @@ class DetailsDisplayingScreen extends StatefulWidget {
 
 class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
     with SingleTickerProviderStateMixin {
+  String updatedAmount = "";
   Future<Map<String, dynamic>>? futureDetails;
   Future<List<FeesData>>? futureFees;
   Future<List<AdditionalFeeData>>? futureAdditionalFees;
@@ -315,31 +316,35 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                                 borderRadius: BorderRadius.circular(8.0),
                               ),
                             ),
-                            onChanged: (value) {},
+                            onChanged: (value) {
+                              setState(() {
+                                updatedAmount =
+                                    value; // Update the state variable
+                              });
+                            },
                           ),
                           SizedBox(height: 16),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               ElevatedButton.icon(
-                                icon: Icon(Icons.payment),
-                                label: Text("Pay Now"),
+                                icon: Icon(
+                                  Icons.payment,
+                                  color: Colors.white,
+                                ),
+                                label: Text(
+                                  "Pay Now",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: screenHeight * 0.02,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
+                                  ),
+                                ),
                                 onPressed: () {
                                   // API CALL: Make API call here to initiate payment with the provided amount
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.orange,
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.only(right: 15.0),
-                                child: Text(
-                                  "₹ ${fee.amount}",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: screenHeight * 0.02,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black,
-                                  ),
                                 ),
                               ),
                             ],
@@ -436,50 +441,28 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                       padding: const EdgeInsets.only(left: 5.0),
                       child: Column(
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.only(right: 280),
-                            child: Text(
-                              "Pay Partial",
-                              style: GoogleFonts.poppins(
-                                fontSize: screenHeight * 0.02,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          TextFormField(
-                            initialValue: fees.amount.toString(),
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              prefixText: "₹ ",
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8.0),
-                              ),
-                            ),
-                            onChanged: (value) {},
-                          ),
-                          SizedBox(height: 16),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              ElevatedButton.icon(
-                                icon: Icon(Icons.payment),
-                                label: Text("Pay Now"),
-                                onPressed: () {
-                                  // API CALL: Make API call here to initiate payment with the provided amount
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.orange,
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.only(right: 15.0),
-                                child: Text(
-                                  "₹ ${fees.amount}",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: screenHeight * 0.02,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black,
+                              Center(
+                                child: ElevatedButton.icon(
+                                  icon: Icon(
+                                    Icons.payment,
+                                    color: Colors.white,
+                                  ),
+                                  label: Text(
+                                    "Pay Now",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: screenHeight * 0.02,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    // API CALL: Make API call here to initiate payment with the provided amount
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.orange,
                                   ),
                                 ),
                               ),
