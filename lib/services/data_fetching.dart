@@ -1,6 +1,7 @@
 // ignore_for_file: unused_import, prefer_const_constructors, unnecessary_type_check, dead_code_catch_following_catch, avoid_print
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:pay_dart/models/students_data_modal.dart';
 
 class DataFetchingService {
   // Replace with your API endpoint
@@ -22,4 +23,32 @@ class DataFetchingService {
       throw Exception('Error fetching details');
     }
   }
+}
+
+class FeesService {
+  final String apiUrl =
+      'https://mocki.io/v1/2f30671a-319d-40ca-8732-7565e001c047';
+
+  Future<List<FeesData>> fetchFees() async {
+    try {
+      final response = await http.get(Uri.parse(apiUrl));
+
+      if (response.statusCode == 200) {
+        print("response body: ${response.body}");
+        List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => FeesData.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load data');
+      }
+    } catch (e) {
+      print('Error: $e');
+      throw Exception('Error fetching details');
+    }
+  }
+
+  getTerm(dataList) {}
+
+  getAmount(dataList) {}
+
+  getdueDate(dataList) {}
 }

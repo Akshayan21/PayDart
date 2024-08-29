@@ -1,3 +1,4 @@
+//students Data Fetching model class
 class Api {
   final String institution;
   final String name;
@@ -49,22 +50,22 @@ class Api {
   }
 }
 
-
-class datafetching {
+//fees details fetching model class
+class FeesData {
   final String term;
   final int amount;
   final String dueDate;
   final String duration;
 
-  datafetching({
+  FeesData({
     required this.term,
     required this.amount,
     required this.dueDate,
     required this.duration,
   });
 
-  factory datafetching.fromJson(Map<String, dynamic> json) {
-    return datafetching(
+  factory FeesData.fromJson(Map<String, dynamic> json) {
+    return FeesData(
       term: json['term'],
       amount: json['amount'],
       dueDate: json['dueDate'],
@@ -72,3 +73,5 @@ class datafetching {
     );
   }
 }
+
+
