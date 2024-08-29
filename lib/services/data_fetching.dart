@@ -1,4 +1,4 @@
-// ignore_for_file: unused_import, prefer_const_constructors, unnecessary_type_check, dead_code_catch_following_catch, avoid_print
+// ignore_for_file: unused_import, prefer_const_constructors, unnecessary_type_check, dead_code_catch_following_catch, avoid_print, prefer_const_declarations
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:pay_dart/models/students_data_modal.dart';
@@ -45,10 +45,24 @@ class FeesService {
       throw Exception('Error fetching details');
     }
   }
+}
 
-  getTerm(dataList) {}
-
-  getAmount(dataList) {}
-
-  getdueDate(dataList) {}
+class Additionalfeesservice {
+  Future<List<AdditionalFeeData>> fetchAdditionalFees() async {
+    final String apiUrl =
+        'https://mocki.io/v1/f8bc0a50-f7e0-4ec1-9383-b3b34743eaab';
+    try {
+      final response = await http.get(Uri.parse(apiUrl));
+      if (response.statusCode == 200) {
+        print("response body: ${response.body}");
+        List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => AdditionalFeeData.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load data');
+      }
+    } catch (e) {
+      print('Error: $e');
+      throw Exception('Error fetching details');
+    }
+  }
 }

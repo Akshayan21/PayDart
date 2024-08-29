@@ -1,4 +1,6 @@
 //students Data Fetching model class
+// ignore_for_file: non_constant_identifier_names
+
 class Api {
   final String institution;
   final String name;
@@ -66,12 +68,34 @@ class FeesData {
 
   factory FeesData.fromJson(Map<String, dynamic> json) {
     return FeesData(
-      term: json['term'],
-      amount: json['amount'],
-      dueDate: json['dueDate'],
-      duration: json['duration'],
+      term: json['term'] ?? "N/A",
+      amount: json['amount'] ?? "N/A",
+      dueDate: json['dueDate'] ?? "N/A",
+      duration: json['duration'] ?? "N/A",
     );
   }
 }
 
+// Additional Fees Data model class
+class AdditionalFeeData {
+  final String Type;
+  final int amount;
+  final String dueDate;
+  final String duration;
 
+  AdditionalFeeData({
+    required this.Type,
+    required this.amount,
+    required this.dueDate,
+    required this.duration,
+  });
+
+  factory AdditionalFeeData.fromJson(Map<String, dynamic> json) {
+    return AdditionalFeeData(
+      Type: json['type'] ?? 'N/A',
+      amount: json['amount'] ?? "N/A",
+      dueDate: json['dueDate'] ?? "N/A",
+      duration: json['duration'] ?? "N/A",
+    );
+  }
+}

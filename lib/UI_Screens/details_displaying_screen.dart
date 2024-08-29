@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_const_constructors, avoid_print
+// ignore_for_file: prefer_const_constructors, avoid_print, unused_element
 
 import 'dart:async';
 import 'dart:io';
@@ -19,6 +19,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
     with SingleTickerProviderStateMixin {
   Future<Map<String, dynamic>>? futureDetails;
   Future<List<FeesData>>? futureFees;
+  Future<List<AdditionalFeeData>>? futureAdditionalFees;
   late TabController _tabController;
 
   // Manage the checkbox states and expanded states
@@ -30,6 +31,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
     super.initState();
     futureDetails = _fetchDetails();
     futureFees = _fetchFees();
+    futureAdditionalFees = _fetchAdditionalFees();
     _tabController = TabController(length: 3, vsync: this);
   }
 
@@ -62,10 +64,33 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
     FeesService service = FeesService(); // Create an instance of the service
     try {
       List<FeesData> fees = await service.fetchFees();
-      // Initialize the isCheckedList and isExpandedList with default values
       isCheckedList = List<bool>.filled(fees.length, false);
       isExpandedList = List<bool>.filled(fees.length, false);
       return fees;
+    } on SocketException catch (_) {
+      print('No Internet connection.');
+      throw Exception(
+          'No Internet connection. Please check your network settings.');
+    } on TimeoutException catch (_) {
+      print('Request timed out.');
+      throw Exception('Request timed out. Please try again later.');
+    } catch (e) {
+      print('An unexpected error occurred: $e');
+      throw Exception('An unexpected error occurred. Please try again.');
+    }
+  }
+
+  Future<List<AdditionalFeeData>> _fetchAdditionalFees() async {
+    print("Fetching fees data...");
+
+    Additionalfeesservice service =
+        Additionalfeesservice(); // Create an instance of the service
+    try {
+      List<AdditionalFeeData> additionalFees =
+          await service.fetchAdditionalFees();
+      isCheckedList = List<bool>.filled(additionalFees.length, false);
+      isExpandedList = List<bool>.filled(additionalFees.length, false);
+      return additionalFees;
     } on SocketException catch (_) {
       print('No Internet connection.');
       throw Exception(
@@ -132,7 +157,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                     children: <Widget>[
                       _buildUpcomingPaymentsTab(screenHeight),
                       Center(child: Text("Payment History Content")),
-                      Center(child: Text("Additional Content")),
+                      _buildAdditionalFeesTab(screenHeight),
                     ],
                   ),
                 ),
@@ -190,6 +215,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
     );
   }
 
+// upcomming payment section
   Widget _buildUpcomingPaymentsTab(double screenHeight) {
     return FutureBuilder<List<FeesData>>(
       future: futureFees,
@@ -309,6 +335,147 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                                 padding: const EdgeInsets.only(right: 15.0),
                                 child: Text(
                                   "₹ ${fee.amount}",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: screenHeight * 0.02,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+// Addition Fees section
+  Widget _buildAdditionalFeesTab(double screenHeight) {
+    return FutureBuilder<List<AdditionalFeeData>>(
+      future: futureAdditionalFees,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(child: Text('No upcoming payments'));
+        }
+
+        List<AdditionalFeeData> datalist = snapshot.data!;
+
+        return ListView.builder(
+          itemCount: datalist.length,
+          itemBuilder: (context, index) {
+            AdditionalFeeData fees = datalist[index];
+
+            return Card(
+              elevation: 3,
+              margin: EdgeInsets.only(left: 10, right: 10, bottom: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: Checkbox(
+                      value: isCheckedList[index],
+                      onChanged: (bool? value) {
+                        setState(() {
+                          isCheckedList[index] = value ?? false;
+                          isExpandedList[index] = value ?? false;
+                        });
+                      },
+                    ),
+                    title: Text(
+                      fees.Type,
+                      style: GoogleFonts.poppins(
+                        fontSize: screenHeight * 0.02,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text("₹",
+                            style: GoogleFonts.poppins(
+                              fontSize: screenHeight * 0.02,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black,
+                            )),
+                        Text(
+                          "${fees.amount}",
+                          style: GoogleFonts.poppins(
+                            fontSize: screenHeight * 0.02,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Due Date: ${fees.dueDate}"),
+                        Text("Duration: ${fees.duration}"),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    height: screenHeight * 0.01,
+                  ),
+                  if (isExpandedList[index])
+                    Padding(
+                      padding: const EdgeInsets.only(left: 5.0),
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 280),
+                            child: Text(
+                              "Pay Partial",
+                              style: GoogleFonts.poppins(
+                                fontSize: screenHeight * 0.02,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          TextFormField(
+                            initialValue: fees.amount.toString(),
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              prefixText: "₹ ",
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                            ),
+                            onChanged: (value) {},
+                          ),
+                          SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              ElevatedButton.icon(
+                                icon: Icon(Icons.payment),
+                                label: Text("Pay Now"),
+                                onPressed: () {
+                                  // API CALL: Make API call here to initiate payment with the provided amount
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orange,
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(right: 15.0),
+                                child: Text(
+                                  "₹ ${fees.amount}",
                                   style: GoogleFonts.poppins(
                                     fontSize: screenHeight * 0.02,
                                     fontWeight: FontWeight.w500,
