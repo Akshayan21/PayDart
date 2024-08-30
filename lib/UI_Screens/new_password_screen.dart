@@ -111,6 +111,9 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
               ),
             ),
           ),
+          SizedBox(
+            height: screenHeight * 0.05,
+          ),
         ],
       ),
     ));
