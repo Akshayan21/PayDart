@@ -4,6 +4,7 @@ import "package:flutter/material.dart";
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pay_dart/UI_Screens/Institutions.dart';
+import 'package:pay_dart/UI_Screens/forget_password.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -87,7 +88,13 @@ class _LoginScreenState extends State<LoginScreen> {
             Padding(
                 padding: const EdgeInsets.only(left: 220.0),
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const ForgetPassword()),
+                  );
+                  },
                   child: Text(
                     "Forget Password?",
                     style: GoogleFonts.poppins(
