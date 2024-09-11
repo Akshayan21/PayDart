@@ -5,8 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pay_dart/models/students_data_modal.dart';
-import 'package:pay_dart/services/data_fetching.dart'; // Assuming this is where your API service classes are defined
-
+import 'package:pay_dart/services/data_fetching.dart'; 
 class DetailsDisplayingScreen extends StatefulWidget {
   const DetailsDisplayingScreen({super.key});
 
@@ -496,3 +495,4 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
     );
   }
 }
+ 

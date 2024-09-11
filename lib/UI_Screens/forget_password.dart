@@ -21,6 +21,17 @@ class _ForgetPasswordState extends State<ForgetPassword> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
+              padding: const EdgeInsets.only(top: 50, left: 10),
+              child: IconButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  icon: Icon(
+                    Icons.arrow_back,
+                    size: screenHeight * 0.03,
+                  )),
+            ),
+            Padding(
               padding: const EdgeInsets.only(top: 50),
               child: Center(
                 child: Image.asset("assets/Logo_Main.png",
@@ -38,7 +49,7 @@ class _ForgetPasswordState extends State<ForgetPassword> {
             SizedBox(
               height: screenHeight * 0.02,
             ),
-            Padding(
+            Padding( 
               padding: const EdgeInsets.only(right: 65, left: 10),
               child: Text(
                 "Enter Your Register Mail Id",
