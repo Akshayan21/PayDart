@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:date_picker_plus/date_picker_plus.dart'; // Import the date_picker_plus package
 import 'package:intl/intl.dart';
-import 'package:pay_dart/UI_Screens/admission_academic_details.dart'; // For date formatting
+import 'package:pay_dart/UI_Screens/admission_academic_details.dart'; // For date formattingan
 
 class AdmissionPersonalDetails extends StatefulWidget {
   const AdmissionPersonalDetails({super.key});

@@ -4,9 +4,45 @@ import 'package:http/http.dart' as http;
 import 'package:pay_dart/models/students_data_modal.dart';
 
 class DataFetchingService {
+
+  Future<Map<String, dynamic>> fetchData() async {
+    try {
+      final uri = Uri.parse("http://10.0.2.2:3000/students/students/N24NS040");
+      final response = await http.get(uri);
+
+      print("response body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        // Decode the JSON response
+        final decodedResponse = jsonDecode(response.body);
+
+        // Check if the response is a list
+        if (decodedResponse is List) {
+          // Return the first item if the list is not empty
+          if (decodedResponse.isNotEmpty) {
+            return decodedResponse.first as Map<String, dynamic>;
+          } else {
+            throw Exception('Received an empty list from the server.');
+          }
+        } else if (decodedResponse is Map<String, dynamic>) {
+          // Return the JSON object directly
+          return decodedResponse;
+        } else {
+          throw Exception('Unexpected JSON format.');
+        }
+      } else {
+        throw Exception('Failed to load data. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error: $e');
+      throw Exception('Error fetching details');
+    }
+  }
+
+
   // Replace with your API endpoint
   final String apiUrl =
-      'https://mocki.io/v1/0713708d-2845-4d08-b237-cd28189ca0ca';
+      'https://mocki.io/v1/79d7834f-f3e7-4b89-b5a3-58a2c767a53c';
 
   Future<Map<String, dynamic>> fetchDetails() async {
     try {
@@ -27,7 +63,7 @@ class DataFetchingService {
 
 class FeesService {
   final String apiUrl =
-      'https://mocki.io/v1/2f30671a-319d-40ca-8732-7565e001c047';
+      'https://mocki.io/v1/dced3a5b-8d28-4921-99fe-142cb664e338';
 
   Future<List<FeesData>> fetchFees() async {
     try {
