@@ -3,6 +3,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_otp_text_field/flutter_otp_text_field.dart';
 
 class DetailsFetchingScreen extends StatefulWidget {
   const DetailsFetchingScreen({super.key});
@@ -100,18 +101,39 @@ class _DetailsFetchingScreenState extends State<DetailsFetchingScreen> {
             SizedBox(
               height: screenHeight * 0.03,
             ),
-            Center(
-              child: SizedBox(
-                width: screenWidth * 0.9,
-                child: TextField(
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10.0),
+            Column(
+              children: [
+                Center(
+                  child: SizedBox(
+                    width: screenWidth * 0.9,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                        labelText: 'Enter your SIN Number',
+                      ),
                     ),
-                    labelText: 'Enter your SIN Number',
                   ),
                 ),
-              ),
+                SizedBox(
+                  height: screenHeight * 0.03,
+                ),
+                Center(
+                  child: SizedBox(
+                    width: screenWidth * 0.9,
+                    child: TextField(
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                        labelText: 'Enter your Mobile Number',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             SizedBox(
               height: screenHeight * 0.05,
@@ -198,7 +220,7 @@ class _DetailsFetchingScreenState extends State<DetailsFetchingScreen> {
                 ),
                 onPressed: validateCaptcha, // Validate CAPTCHA when clicked
                 child: Text(
-                  "Proceed",
+                  "Get OTP",
                   style: GoogleFonts.poppins(
                     fontSize: screenHeight * 0.02,
                     fontWeight: FontWeight.w500,
