@@ -78,13 +78,13 @@ class FeesData {
 
 // Additional Fees Data model class
 class AdditionalFeeData {
-  final String Type;
-  final int amount;
+  final String type;
+  final double amount;
   final String dueDate;
   final String duration;
 
   AdditionalFeeData({
-    required this.Type,
+    required this.type,
     required this.amount,
     required this.dueDate,
     required this.duration,
@@ -92,10 +92,10 @@ class AdditionalFeeData {
 
   factory AdditionalFeeData.fromJson(Map<String, dynamic> json) {
     return AdditionalFeeData(
-      Type: json['type'] ?? 'N/A',
-      amount: json['amount'] ?? "N/A",
-      dueDate: json['dueDate'] ?? "N/A",
-      duration: json['duration'] ?? "N/A",
+      type: json['type'],
+      amount: (json['amount'] as num).toDouble(), // Ensure it's a double
+      dueDate: json['dueDate'],
+      duration: json['duration'],
     );
   }
 }
