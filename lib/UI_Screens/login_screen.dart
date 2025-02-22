@@ -157,8 +157,6 @@
 //   }
 // }
 
-
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -269,10 +267,13 @@ class _LoginScreenState extends State<LoginScreen> {
             SizedBox(height: screenHeight * 0.03),
             Padding(
               padding: const EdgeInsets.only(right: 125, left: 10),
-              child: Text(
-                "Hey There!\nLogin To Continue",
-                style: GoogleFonts.poppins(
-                    fontSize: 30, fontWeight: FontWeight.w500),
+              child: Center(
+                child: Text(
+                  "Hey Welcome Back!\nLogin to Your Account",
+                  style: GoogleFonts.poppins(
+                      fontSize: screenHeight * 0.03,
+                      fontWeight: FontWeight.w700),
+                ),
               ),
             ),
             SizedBox(height: screenHeight * 0.05),
@@ -323,10 +324,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: _isLoading
                     ? CircularProgressIndicator(color: Colors.white)
                     : Text("Login",
-                    style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500)),
+                        style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500)),
               ),
             ),
           ],

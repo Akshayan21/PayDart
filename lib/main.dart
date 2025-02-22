@@ -28,7 +28,6 @@
 import 'package:flutter/material.dart';
 import 'package:pay_dart/UI_Screens/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'UI_Screens/details_displaying_screen.dart';
 
 void main() async {

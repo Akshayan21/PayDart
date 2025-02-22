@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_const_constructors
+// ignore_for_file: prefer_const_constructors, unused_local_variable, must_call_super, override_on_non_overriding_member
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -13,42 +13,63 @@ class DetailsDisplayingScreen extends StatefulWidget {
   const DetailsDisplayingScreen({super.key});
 
   @override
-  State<DetailsDisplayingScreen> createState() => _DetailsDisplayingScreenState();
+  State<DetailsDisplayingScreen> createState() =>
+      _DetailsDisplayingScreenState();
 }
 
-class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen> with SingleTickerProviderStateMixin {
+class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
+    with SingleTickerProviderStateMixin {
   String updatedAmount = "";
   Future<List<AdditionalFeeData>>? futureAdditionalFees;
+  Future<Map<String, dynamic>>? futureFees;
   late TabController _tabController;
   Future<Map<String, dynamic>>? futureData;
   List<bool> isCheckedList = [];
   List<bool> isExpandedList = [];
+  List<TextEditingController> amountControllers = [];
 
   @override
   void initState() {
     super.initState();
     futureData = _fetchData();
     futureAdditionalFees = _fetchAdditionalFees();
+    futureFees = _fetchFees();
     _tabController = TabController(length: 3, vsync: this);
+
+    // Initialize lists with default values
+    isCheckedList = [];
+    amountControllers = [];
   }
 
   @override
   void dispose() {
+    for (var controller in amountControllers) {
+      controller.dispose();
+    }
     _tabController.dispose();
     super.dispose();
   }
 
+  @override
+  bool get wantKeepAlive => true;
+
   Future<Map<String, dynamic>> _fetchData() async {
     DataFetchingService service = DataFetchingService();
-      return await service.fetchData().timeout(Duration(seconds: 20));
+    return await service.fetchData().timeout(Duration(seconds: 20));
   }
 
   Future<List<AdditionalFeeData>> _fetchAdditionalFees() async {
     Additionalfeesservice service = Additionalfeesservice();
-    List<AdditionalFeeData> additionalFees = await service.fetchAdditionalFees();
-      isCheckedList = List<bool>.filled(additionalFees.length, false);
-      isExpandedList = List<bool>.filled(additionalFees.length, false);
-      return additionalFees;
+    List<AdditionalFeeData> additionalFees =
+        await service.fetchAdditionalFees();
+    isCheckedList = List<bool>.filled(additionalFees.length, false);
+    isExpandedList = List<bool>.filled(additionalFees.length, false);
+    return additionalFees;
+  }
+
+  Future<Map<String, dynamic>> _fetchFees() async {
+    FeesService service = FeesService();
+    return await service.fetchFees();
   }
 
   @override
@@ -72,7 +93,8 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen> with 
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(top: 50.0, left: 20.0, right: 300.0),
+                  padding: const EdgeInsets.only(
+                      top: 50.0, left: 20.0, right: 300.0),
                   child: Text(
                     "Details",
                     style: GoogleFonts.poppins(
@@ -100,7 +122,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen> with 
                     controller: _tabController,
                     children: <Widget>[
                       _buildUpcomingPaymentsTab(screenHeight),
-                      Center(child: Text("Payment History Content")),
+                      Center(child: Text("No Payment History")),
                       _buildAdditionalFeesTab(screenHeight),
                     ],
                   ),
@@ -113,7 +135,8 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen> with 
     );
   }
 
-  Widget _buildDetailsContainer(Map<String, dynamic> details, double screenHeight, double screenWidth) {
+  Widget _buildDetailsContainer(
+      Map<String, dynamic> details, double screenHeight, double screenWidth) {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 5),
       height: screenHeight * 0.45,
@@ -135,17 +158,22 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen> with 
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildDetailRow("Institution:", details['institution'], screenHeight),
-            _buildDetailRow("Name:", details['name'], screenHeight),
-            _buildDetailRow("D.O.B:", details['dob'], screenHeight),
-            _buildDetailRow("Student ID:", details['studentId'], screenHeight),
-            _buildDetailRow("Course:", details['course'], screenHeight),
-            _buildDetailRow("Degree Type:", details['degreeType'], screenHeight),
-            _buildDetailRow("7.5 SCH:", details['sevenPointFive'], screenHeight),
-            _buildDetailRow("FG:", details['fg'], screenHeight),
-            _buildDetailRow("Post Metric:", details['postMatric'], screenHeight),
-            _buildDetailRow("Batch:", details['batch'], screenHeight),
-            _buildDetailRow("Active:", details['active'], screenHeight),
+            _buildDetailRow(
+                "Institution:", details['institution'], screenHeight * 0.9),
+            _buildDetailRow("Name:", details['name'], screenHeight * 0.9),
+            _buildDetailRow("D.O.B:", details['dob'], screenHeight * 0.9),
+            _buildDetailRow(
+                "Student ID:", details['studentId'], screenHeight * 0.9),
+            _buildDetailRow("Course:", details['course'], screenHeight * 0.9),
+            _buildDetailRow(
+                "Degree Type:", details['degreeType'], screenHeight * 0.9),
+            _buildDetailRow(
+                "7.5 SCH:", details['sevenPointFive'], screenHeight * 0.9),
+            _buildDetailRow("FG:", details['fg'], screenHeight * 0.9),
+            _buildDetailRow(
+                "Post Metric:", details['postMatric'], screenHeight * 0.9),
+            _buildDetailRow("Batch:", details['batch'], screenHeight * 0.9),
+            _buildDetailRow("Active:", details['active'], screenHeight * 0.9),
           ],
         ),
       ),
@@ -154,7 +182,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen> with 
 
   Widget _buildUpcomingPaymentsTab(double screenHeight) {
     return FutureBuilder<Map<String, dynamic>>(
-      future: futureData,
+      future: futureFees,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
@@ -163,153 +191,200 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen> with 
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return Center(child: Text('No upcoming payments'));
         }
-        final data = snapshot.data!;
-        final terms = [
-          {'term': 'termA', 'amount': data['termA'], 'dueDate': data['termA_Duedate']},
-          {'term': 'Term B', 'amount': data['termB'], 'dueDate': data['termB_Duedate']},
-          {'term': 'Term C', 'amount': data['termC'], 'dueDate': data['termC_Duedate']},
-          {'term': 'Term D', 'amount': data['termD'], 'dueDate': data['termD_Duedate']},
-          {'term': 'Term E', 'amount': data['termE'], 'dueDate': data['termE_Duedate']},
-          {'term': 'Term F', 'amount': data['termF'], 'dueDate': data['termF_Duedate']},
-        ].where((term) => term['amount'] != null && term['amount'] > 0).toList();
 
-        if (isCheckedList.length != terms.length) {
-          isCheckedList = List<bool>.filled(terms.length, false);
+        final data = snapshot.data!;
+        print('Fetched Data: $data'); // Debug: Print fetched data
+
+        // Extract the list of fees from the fetched data
+        final List<dynamic> feesList = data['fees'];
+
+        // Map the fees list to the terms list
+        final terms = feesList.map((fee) {
+          return {
+            'term': fee['term'],
+            'amount': fee['amount'],
+            'dueDate': fee['dueDate'],
+            'duration': fee['duration']
+          };
+        }).toList();
+
+        print(
+            'Terms after mapping: $terms'); // Debug: Print terms after mapping
+
+        // Filter out terms with null or zero amount
+        final filteredTerms = terms
+            .where((term) => term['amount'] != null && term['amount'] > 0)
+            .toList();
+
+        print(
+            'Terms after filtering: $filteredTerms'); // Debug: Print terms after filtering
+
+        // Handle empty terms list
+        if (filteredTerms.isEmpty) {
+          return Center(child: Text('No payments due'));
         }
 
-        return ListView.builder(
-          itemCount: terms.length,
-          itemBuilder: (context, index) {
-            final term = terms[index];
-            final paidAmount = (term['paid'] as List<dynamic>?)
-                ?.fold(0, (sum, item) => sum + (item['paidAmount'] as int? ?? 0)) ?? 0;
-            final isEnabled = index == 0 || ((index > 0 && paidAmount >= (terms[index - 1]['amount'] ?? 0)));
-            final TextEditingController amountController = TextEditingController();
+        // Initialize isCheckedList and amountControllers if their lengths do not match
+        if (isCheckedList.length != filteredTerms.length) {
+          isCheckedList = List<bool>.filled(filteredTerms.length, false);
+          amountControllers = List.generate(
+            filteredTerms.length,
+            (index) => TextEditingController(),
+          );
+        }
 
-            return Card(
-              elevation: 3,
-              margin: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: Checkbox(
-                      value: isCheckedList[index],
-                      onChanged: isEnabled
-                          ? (bool? value) {
-                        setState(() {
-                          isCheckedList[index] = value ?? false;
-                        });
-                      }
-                          : null,
-                    ),
-                    title: Text(
-                      term['term'],
-                      style: GoogleFonts.poppins(
-                        fontSize: screenHeight * 0.02,
-                        fontWeight: FontWeight.w500,
-                        color: isEnabled ? Colors.black : Colors.grey,
+        print(
+            'isCheckedList Length: ${isCheckedList.length}'); // Debug: Print isCheckedList length
+        print(
+            'amountControllers Length: ${amountControllers.length}'); // Debug: Print amountControllers length
+
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.8,
+          child: ListView.builder(
+            itemCount: filteredTerms.length,
+            itemBuilder: (context, index) {
+              final term = filteredTerms[index];
+              final paidAmount = (term['paid'] as List<dynamic>?)?.fold(0,
+                      (sum, item) => sum + (item['paidAmount'] as int? ?? 0)) ??
+                  0;
+              final isEnabled = index == 0 ||
+                  ((index > 0 &&
+                      paidAmount >= (filteredTerms[index - 1]['amount'] ?? 0)));
+
+              return Card(
+                elevation: 3,
+                margin: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: Checkbox(
+                        value: isCheckedList[index],
+                        onChanged: isEnabled
+                            ? (bool? value) {
+                                setState(() {
+                                  isCheckedList[index] = value ?? false;
+                                });
+                              }
+                            : null,
                       ),
-                    ),
-                    trailing: Text(
-                      "₹ ${(term['amount'] ?? 0) - paidAmount}",
-                      style: GoogleFonts.poppins(
-                        fontSize: screenHeight * 0.02,
-                        fontWeight: FontWeight.w500,
-                        color: paidAmount >= term['amount'] ? Colors.green : Colors.red,
+                      title: Text(
+                        term['term'],
+                        style: GoogleFonts.poppins(
+                          fontSize: screenHeight * 0.02,
+                          fontWeight: FontWeight.w500,
+                          color: isEnabled ? Colors.black : Colors.grey,
+                        ),
                       ),
-                    ),
-                    subtitle: Text(
-                      "Due Date: ${term['dueDate']}",
-                      style: GoogleFonts.poppins(
-                        fontSize: screenHeight * 0.015,
-                        color: Colors.grey,
+                      trailing: Text(
+                        "₹ ${(term['amount'] ?? 0) - paidAmount}",
+                        style: GoogleFonts.poppins(
+                          fontSize: screenHeight * 0.02,
+                          fontWeight: FontWeight.w500,
+                          color: paidAmount >= term['amount']
+                              ? Colors.green
+                              : Colors.black,
+                        ),
                       ),
-                    ),
-                  ),
-                  if (isCheckedList[index]) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      child: TextField(
-                        controller: amountController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: "Enter Amount",
-                          border: OutlineInputBorder(),
+                      subtitle: Text(
+                        "Due Date: ${term['dueDate']}",
+                        style: GoogleFonts.poppins(
+                          fontSize: screenHeight * 0.015,
+                          color: Colors.grey,
                         ),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          final prefs = await SharedPreferences.getInstance();
-                          final studentId = prefs.getString('username');
-                          if (studentId == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Student ID not found')),
-                            );
-                            return;
-                          }
-                          final selectedTerm = term['term'];
-                          final paymentAmt = double.tryParse(amountController.text) ?? 0;
-                          if (paymentAmt <= 0) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Please enter a valid amount')),
-                            );
-                            return;
-                          }
-                          try {
-                            final response = await http.post(
-                              Uri.parse("http://10.0.2.2:3000/students/students/payfees"),
-                              headers: {'Content-Type': 'application/json'},
-                              body: jsonEncode({
-                                'studentId': studentId,
-                                'selectedTerm': selectedTerm,
-                                'paymentAmt': paymentAmt,
-                              }),
-                            );
-                            if (response.statusCode == 200) {
+                    if (isCheckedList[index]) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        child: TextField(
+                          controller: amountControllers[
+                              index], // Use the stored controller
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: "Enter Amount",
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final prefs = await SharedPreferences.getInstance();
+                            final studentId = prefs.getString('username');
+                            if (studentId == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Payment successful for $selectedTerm'),
-                                ),
+                                SnackBar(content: Text('Student ID not found')),
                               );
-                              Map<String, dynamic> futureData = await _fetchData();
-                              setState(() {
-                                isCheckedList[index] = false;
-                                amountController.clear();
-                              });
-                              // await _fetchData();
-
-                            } else {
+                              return;
+                            }
+                            final selectedTerm = term['term'];
+                            final paymentAmt = double.tryParse(
+                                    amountControllers[index].text) ??
+                                0;
+                            if (paymentAmt <= 0) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Failed to process payment: ${response.body}'),
+                                    content:
+                                        Text('Please enter a valid amount')),
+                              );
+                              return;
+                            }
+                            try {
+                              final response = await http.post(
+                                Uri.parse(
+                                    "http://10.0.2.2:3000/students/students/payfees"),
+                                headers: {'Content-Type': 'application/json'},
+                                body: jsonEncode({
+                                  'studentId': studentId,
+                                  'selectedTerm': selectedTerm,
+                                  'paymentAmt': paymentAmt,
+                                }),
+                              );
+                              if (response.statusCode == 200) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        'Payment successful for $selectedTerm'),
+                                  ),
+                                );
+                                setState(() {
+                                  isCheckedList[index] = false;
+                                  amountControllers[index]
+                                      .clear(); // Clear the stored controller
+                                });
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        'Failed to process payment: ${response.body}'),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error: $e'),
                                 ),
                               );
                             }
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error: $e'),
-                              ),
-                            );
-                          }
-                        },
-                        child: Text("Pay Now"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
+                          },
+                          child: Text("Pay Now"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
-              ),
-            );
-          },
+                ),
+              );
+            },
+          ),
         );
       },
     );
@@ -326,7 +401,15 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen> with 
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return Center(child: Text('No upcoming payments'));
         }
+
         List<AdditionalFeeData> datalist = snapshot.data!;
+
+        // Ensure list lengths match
+        if (isCheckedList.length < datalist.length) {
+          isCheckedList = List.generate(datalist.length, (index) => false);
+          isExpandedList = List.generate(datalist.length, (index) => false);
+        }
+
         return ListView.builder(
           itemCount: datalist.length,
           itemBuilder: (context, index) {
@@ -350,7 +433,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen> with 
                       },
                     ),
                     title: Text(
-                      fees.Type,
+                      fees.type,
                       style: GoogleFonts.poppins(
                         fontSize: screenHeight * 0.02,
                         fontWeight: FontWeight.w500,
