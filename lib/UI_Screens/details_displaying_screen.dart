@@ -1,11 +1,17 @@
-// ignore_for_file: prefer_const_constructors, unused_local_variable, must_call_super, override_on_non_overriding_member
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:pay_dart/models/students_data_modal.dart';
-import 'package:pay_dart/services/data_fetching.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:pay_dart/Templete/pdf_templete.dart';
+import 'package:pay_dart/models/data_modals.dart';
+import 'package:pay_dart/services/additional_fees_details.dart';
+import 'package:pay_dart/services/payment_history_details.dart';
+import 'package:pay_dart/services/recipte_service.dart';
+import 'package:pay_dart/services/students_data_fetching.dart';
+import 'package:pay_dart/services/fees_details_fetching.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
@@ -18,10 +24,13 @@ class DetailsDisplayingScreen extends StatefulWidget {
 }
 
 class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   String updatedAmount = "";
   Future<List<AdditionalFeeData>>? futureAdditionalFees;
+  Future<List<PaymentHistory>>? futurePaymentHistory;
   Future<Map<String, dynamic>>? futureFees;
+  Recipt? pdfdata; // Added to store PDF data
+  bool isloading = true; // Added to track loading state
   late TabController _tabController;
   Future<Map<String, dynamic>>? futureData;
   List<bool> isCheckedList = [];
@@ -34,11 +43,9 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
     futureData = _fetchData();
     futureAdditionalFees = _fetchAdditionalFees();
     futureFees = _fetchFees();
+    futurePaymentHistory = _fetchPaymentHistory();
     _tabController = TabController(length: 3, vsync: this);
-
-    // Initialize lists with default values
-    isCheckedList = [];
-    amountControllers = [];
+    pdffetchdata(); // Fetch PDF data on initialization
   }
 
   @override
@@ -59,12 +66,13 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
   }
 
   Future<List<AdditionalFeeData>> _fetchAdditionalFees() async {
-    Additionalfeesservice service = Additionalfeesservice();
-    List<AdditionalFeeData> additionalFees =
-        await service.fetchAdditionalFees();
-    isCheckedList = List<bool>.filled(additionalFees.length, false);
-    isExpandedList = List<bool>.filled(additionalFees.length, false);
-    return additionalFees;
+    AdditionalPaymentService service = AdditionalPaymentService();
+    return await service.fetchAdditionalPaymentData();
+  }
+
+  Future<List<PaymentHistory>> _fetchPaymentHistory() async {
+    PaymentHistoryService service = PaymentHistoryService();
+    return await service.fetchPaymentHistory();
   }
 
   Future<Map<String, dynamic>> _fetchFees() async {
@@ -72,8 +80,67 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
     return await service.fetchFees();
   }
 
+  Future<bool> requestStoragePermission() async {
+    if (Platform.isAndroid) {
+      var status = await Permission.storage.status;
+      if (status.isGranted) {
+        return true;
+      } else {
+        var result = await Permission.storage.request();
+        if (result.isGranted) {
+          return true;
+        } else if (await Permission.manageExternalStorage.request().isGranted) {
+          return true;
+        } else {
+          await openAppSettings();
+          return false;
+        }
+      }
+    }
+    return false;
+  }
+
+  // Fetch PDF data
+  void pdffetchdata() async {
+    final prefs = await SharedPreferences.getInstance();
+    final regno =
+        prefs.getString('username'); // Assuming regno is stored as 'username'
+    if (regno == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Student ID not found')),
+      );
+      return;
+    }
+
+    final data = await ReciptService().fetchFeesReceipt(regno);
+    setState(() {
+      pdfdata = data;
+      isloading = false;
+    });
+  }
+
+  // Download PDF function
+  void downloadpdf() async {
+    if (pdfdata == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No PDF data available')),
+      );
+      return;
+    }
+
+    final pdfPath = await PdfGenerator().generatePdf(pdfdata!);
+    if (pdfPath != null) {
+      OpenFilex.open(pdfPath);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save PDF')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
 
@@ -122,7 +189,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                     controller: _tabController,
                     children: <Widget>[
                       _buildUpcomingPaymentsTab(screenHeight),
-                      Center(child: Text("No Payment History")),
+                      _buildPaymentHistoryTab(screenHeight),
                       _buildAdditionalFeesTab(screenHeight),
                     ],
                   ),
@@ -150,7 +217,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
             spreadRadius: 3,
             blurRadius: 5,
             offset: Offset(2, 5),
-          ),
+          )
         ],
       ),
       child: Padding(
@@ -193,12 +260,8 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
         }
 
         final data = snapshot.data!;
-        print('Fetched Data: $data'); // Debug: Print fetched data
-
-        // Extract the list of fees from the fetched data
         final List<dynamic> feesList = data['fees'];
 
-        // Map the fees list to the terms list
         final terms = feesList.map((fee) {
           return {
             'term': fee['term'],
@@ -208,23 +271,14 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
           };
         }).toList();
 
-        print(
-            'Terms after mapping: $terms'); // Debug: Print terms after mapping
-
-        // Filter out terms with null or zero amount
         final filteredTerms = terms
             .where((term) => term['amount'] != null && term['amount'] > 0)
             .toList();
 
-        print(
-            'Terms after filtering: $filteredTerms'); // Debug: Print terms after filtering
-
-        // Handle empty terms list
         if (filteredTerms.isEmpty) {
           return Center(child: Text('No payments due'));
         }
 
-        // Initialize isCheckedList and amountControllers if their lengths do not match
         if (isCheckedList.length != filteredTerms.length) {
           isCheckedList = List<bool>.filled(filteredTerms.length, false);
           amountControllers = List.generate(
@@ -232,11 +286,6 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
             (index) => TextEditingController(),
           );
         }
-
-        print(
-            'isCheckedList Length: ${isCheckedList.length}'); // Debug: Print isCheckedList length
-        print(
-            'amountControllers Length: ${amountControllers.length}'); // Debug: Print amountControllers length
 
         return Container(
           height: MediaQuery.of(context).size.height * 0.8,
@@ -301,8 +350,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 5),
                         child: TextField(
-                          controller: amountControllers[
-                              index], // Use the stored controller
+                          controller: amountControllers[index],
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
                             labelText: "Enter Amount",
@@ -354,8 +402,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                                 );
                                 setState(() {
                                   isCheckedList[index] = false;
-                                  amountControllers[index]
-                                      .clear(); // Clear the stored controller
+                                  amountControllers[index].clear();
                                 });
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -373,13 +420,99 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                               );
                             }
                           },
-                          child: Text("Pay Now"),
+                          child: Text(
+                            "Pay Now",
+                            style: TextStyle(color: Colors.white),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,
                           ),
                         ),
                       ),
                     ],
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPaymentHistoryTab(double screenHeight) {
+    return FutureBuilder<List<PaymentHistory>>(
+      future: futurePaymentHistory,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Error: ${snapshot.error}\nPlease check the API response or try again later.',
+              style: TextStyle(color: Colors.red),
+            ),
+          );
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(child: Text('No Payment History Found'));
+        }
+
+        List<PaymentHistory> paymentList = snapshot.data!;
+
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.8,
+          child: ListView.builder(
+            itemCount: paymentList.length,
+            itemBuilder: (context, index) {
+              final fees = paymentList[index];
+              return Card(
+                elevation: 3,
+                margin: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: [
+                    ListTile(
+                      title: Text(
+                        fees.type,
+                        style: GoogleFonts.poppins(
+                          fontSize: screenHeight * 0.02,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      trailing: Text(
+                        "₹ ${fees.amount}",
+                        style: GoogleFonts.poppins(
+                          fontSize: screenHeight * 0.02,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Due Date: ${fees.dueDate}"),
+                          Text("Duration: ${fees.duration}"),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ElevatedButton.icon(
+                        icon: Icon(Icons.download, color: Colors.white),
+                        label: Text(
+                          "Download Receipt",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        onPressed: () {
+                          downloadpdf(); // Call the downloadpdf function
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -397,117 +530,163 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+          return Center(
+            child: Text(
+              'Error: ${snapshot.error}\nPlease check the API response or try again later.',
+              style: TextStyle(color: Colors.red),
+            ),
+          );
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(child: Text('No upcoming payments'));
+          return Center(child: Text('No additional fees'));
         }
 
         List<AdditionalFeeData> datalist = snapshot.data!;
 
-        // Ensure list lengths match
-        if (isCheckedList.length < datalist.length) {
-          isCheckedList = List.generate(datalist.length, (index) => false);
-          isExpandedList = List.generate(datalist.length, (index) => false);
+        final filteredFees = datalist
+            .where((fee) => fee.amount != null && fee.amount > 0)
+            .toList();
+
+        if (filteredFees.isEmpty) {
+          return Center(child: Text('No additional fees due'));
         }
 
-        return ListView.builder(
-          itemCount: datalist.length,
-          itemBuilder: (context, index) {
-            AdditionalFeeData fees = datalist[index];
-            return Card(
-              elevation: 3,
-              margin: EdgeInsets.only(left: 10, right: 10, bottom: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: Checkbox(
-                      value: isCheckedList[index],
-                      onChanged: (bool? value) {
-                        setState(() {
-                          isCheckedList[index] = value ?? false;
-                          isExpandedList[index] = value ?? false;
-                        });
-                      },
-                    ),
-                    title: Text(
-                      fees.type,
-                      style: GoogleFonts.poppins(
-                        fontSize: screenHeight * 0.02,
-                        fontWeight: FontWeight.w500,
+        if (isCheckedList.length != filteredFees.length) {
+          isCheckedList = List<bool>.filled(filteredFees.length, false);
+          amountControllers = List.generate(
+            filteredFees.length,
+            (index) => TextEditingController(),
+          );
+        }
+
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.8,
+          child: ListView.builder(
+            itemCount: filteredFees.length,
+            itemBuilder: (context, index) {
+              final fee = filteredFees[index];
+              final isEnabled =
+                  index == 0 || ((index > 0 && isCheckedList[index - 1]));
+
+              return Card(
+                elevation: 3,
+                margin: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: Checkbox(
+                        value: isCheckedList[index],
+                        onChanged: isEnabled
+                            ? (bool? value) {
+                                setState(() {
+                                  isCheckedList[index] = value ?? false;
+                                });
+                              }
+                            : null,
                       ),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text("₹",
-                            style: GoogleFonts.poppins(
-                              fontSize: screenHeight * 0.02,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
-                            )),
-                        Text(
-                          "${fees.amount}",
-                          style: GoogleFonts.poppins(
-                            fontSize: screenHeight * 0.02,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black,
-                          ),
+                      title: Text(
+                        fee.type,
+                        style: GoogleFonts.poppins(
+                          fontSize: screenHeight * 0.02,
+                          fontWeight: FontWeight.w500,
+                          color: isEnabled ? Colors.black : Colors.grey,
                         ),
-                      ],
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Due Date: ${fees.dueDate}"),
-                        Text("Duration: ${fees.duration}"),
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    height: screenHeight * 0.01,
-                  ),
-                  if (isExpandedList[index])
-                    Padding(
-                      padding: const EdgeInsets.only(left: 5.0),
-                      child: Column(
+                      ),
+                      trailing: Text(
+                        "₹ ${fee.amount}",
+                        style: GoogleFonts.poppins(
+                          fontSize: screenHeight * 0.02,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Center(
-                                child: ElevatedButton.icon(
-                                  icon: Icon(
-                                    Icons.payment,
-                                    color: Colors.white,
-                                  ),
-                                  label: Text(
-                                    "Pay Now",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: screenHeight * 0.02,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    // API CALL: Make API call here to initiate payment with the provided amount
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.orange,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                          Text("Due Date: ${fee.dueDate}"),
+                          Text("Duration: ${fee.duration}"),
                         ],
                       ),
                     ),
-                ],
-              ),
-            );
-          },
+                    if (isCheckedList[index]) ...[
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final prefs = await SharedPreferences.getInstance();
+                            final studentId = prefs.getString('username');
+                            if (studentId == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Student ID not found')),
+                              );
+                              return;
+                            }
+                            final paymentAmt = double.tryParse(
+                                    amountControllers[index].text) ??
+                                0;
+                            if (paymentAmt <= 0) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content:
+                                        Text('Please enter a valid amount')),
+                              );
+                              return;
+                            }
+                            try {
+                              final response = await http.post(
+                                Uri.parse(
+                                    "http://10.0.2.2:3000/students/students/payfees"),
+                                headers: {'Content-Type': 'application/json'},
+                                body: jsonEncode({
+                                  'studentId': studentId,
+                                  'selectedTerm': fee.type,
+                                  'paymentAmt': paymentAmt,
+                                }),
+                              );
+                              if (response.statusCode == 200) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        'Payment successful for ${fee.type}'),
+                                  ),
+                                );
+                                setState(() {
+                                  isCheckedList[index] = false;
+                                  amountControllers[index].clear();
+                                });
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        'Failed to process payment: ${response.body}'),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error: $e'),
+                                ),
+                              );
+                            }
+                          },
+                          child: Text(
+                            "Pay Now",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
         );
       },
     );

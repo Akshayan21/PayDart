@@ -99,3 +99,69 @@ class AdditionalFeeData {
     );
   }
 }
+
+class PaymentHistory  {
+  final String type;
+  final double amount;
+  final String dueDate;
+  final String duration;
+
+
+  PaymentHistory ({
+    required this.type,
+    required this.amount,
+    required this.dueDate,
+    required this.duration,
+  });
+
+  factory PaymentHistory .fromJson(Map<String, dynamic> json) {
+    return PaymentHistory (
+      type: json['type'],
+      amount: (json['amount'] as num).toDouble(), // Ensure it's a double
+      dueDate: json['dueDate'],
+      duration: json['duration'],
+    );
+  }
+
+}
+
+class Recipt {
+  final String name;
+  final String departement;
+  final String batch;
+  final String regno;
+  final String feestype;
+  final String date;
+  final double totalamount;
+  final double paidamount;
+  final double balanceamount;
+  final String referenceno;
+
+  Recipt({
+    required this.name,
+    required this.departement,
+    required this.batch,
+    required this.regno,
+    required this.feestype,
+    required this.date,
+    required this.totalamount,
+    required this.paidamount,
+    required this.balanceamount,
+    required this.referenceno,
+  });
+
+  factory Recipt.fromJson(Map<String, dynamic> json) {
+    return Recipt(
+      name: json['name'],
+      departement: json['departement'],
+      batch: json['batch'],
+      regno: json['regno'],
+      feestype: json['feestype'],
+      date: json['date'],
+      totalamount: (json['totalamount'] as num).toDouble(),
+      paidamount: (json['paidamount'] as num).toDouble(),
+      balanceamount: (json['balanceamount'] as num).toDouble(),
+      referenceno: json['referenceno'],
+    );
+  }
+}
