@@ -185,7 +185,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
-    final url = Uri.parse("http://10.0.2.2:3000/auth/login");
+    final url = Uri.parse(
+        "https://6d58-2409-40f4-3108-56e0-314b-e519-3f0e-360.ngrok-free.app/auth/login");
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 

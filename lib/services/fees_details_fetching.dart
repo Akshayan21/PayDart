@@ -41,7 +41,7 @@ class FeesService {
 
   // Replace with your API endpoint
   final String apiUrl =
-      'https://run.mocky.io/v3/95a60a60-8135-498c-bbde-11708f76d75d';
+      'https://run.mocky.io/v3/5abd1061-2d9a-416d-b77c-579ce514c873';
 
   Future<Map<String, dynamic>> fetchFees() async {
     try {

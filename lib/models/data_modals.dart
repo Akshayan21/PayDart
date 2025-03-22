@@ -100,31 +100,29 @@ class AdditionalFeeData {
   }
 }
 
-class PaymentHistory  {
+class PaymentHistory {
   final String type;
-  final double amount;
   final String dueDate;
   final String duration;
+  final double amount;
 
-
-  PaymentHistory ({
+  PaymentHistory({
     required this.type,
-    required this.amount,
     required this.dueDate,
     required this.duration,
+    required this.amount,
   });
 
-  factory PaymentHistory .fromJson(Map<String, dynamic> json) {
-    return PaymentHistory (
-      type: json['type'],
-      amount: (json['amount'] as num).toDouble(), // Ensure it's a double
-      dueDate: json['dueDate'],
-      duration: json['duration'],
+  factory PaymentHistory.fromJson(Map<String, dynamic> json) {
+    return PaymentHistory(
+      type: json['type'] ?? 'Unknown', // Assign 'Unknown' if null
+      dueDate: json['dueDate'] ?? 'N/A', // Assign 'N/A' if null
+      duration: json['duration'] ?? 'N/A',
+      amount: (json['amount'] ?? 0).toDouble(), // Assign 0.0 if null
     );
   }
-
 }
-
+ 
 class Recipt {
   final String name;
   final String departement;

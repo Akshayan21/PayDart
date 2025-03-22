@@ -706,5 +706,5 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
         SizedBox(height: screenHeight * 0.01),
       ],
     );
-  }
+  } 
 }
