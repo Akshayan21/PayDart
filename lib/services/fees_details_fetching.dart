@@ -6,7 +6,7 @@ class FeesService {
   Future<Map<String, dynamic>> fetchfess() async {
     try {
       final uri = Uri.parse(
-          "https://run.mocky.io/v3/95a60a60-8135-498c-bbde-11708f76d75d");
+          "https://run.mocky.io/v3/a43d26e2-78ee-4540-afa3-2999e15369b7");
       final response = await http.get(uri);
 
       print("Fees Response: ${response.body}");
@@ -41,7 +41,7 @@ class FeesService {
 
   // Replace with your API endpoint
   final String apiUrl =
-      'https://run.mocky.io/v3/5abd1061-2d9a-416d-b77c-579ce514c873';
+      'https://run.mocky.io/v3/a43d26e2-78ee-4540-afa3-2999e15369b7';
 
   Future<Map<String, dynamic>> fetchFees() async {
     try {

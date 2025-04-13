@@ -160,8 +160,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(
-                      top: 50.0, left: 20.0, right: 300.0),
+                  padding: const EdgeInsets.only(top: 50.0, right: 250.0),
                   child: Text(
                     "Details",
                     style: GoogleFonts.poppins(
@@ -207,7 +206,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 5),
       height: screenHeight * 0.45,
-      width: screenWidth * 0.9,
+      width: screenWidth * 1,
       decoration: BoxDecoration(
         color: Color.fromARGB(255, 243, 242, 242),
         borderRadius: BorderRadius.circular(10),
@@ -226,21 +225,21 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildDetailRow(
-                "Institution:", details['institution'], screenHeight * 0.9),
-            _buildDetailRow("Name:", details['name'], screenHeight * 0.9),
-            _buildDetailRow("D.O.B:", details['dob'], screenHeight * 0.9),
+                "Institution:", details['institution'], screenHeight * 1),
+            _buildDetailRow("Name:", details['name'], screenHeight * 1),
+            _buildDetailRow("D.O.B:", details['dob'], screenHeight * 1),
             _buildDetailRow(
-                "Student ID:", details['studentId'], screenHeight * 0.9),
-            _buildDetailRow("Course:", details['course'], screenHeight * 0.9),
+                "Student ID:", details['studentId'], screenHeight * 1),
+            _buildDetailRow("Course:", details['course'], screenHeight * 1),
             _buildDetailRow(
-                "Degree Type:", details['degreeType'], screenHeight * 0.9),
+                "Degree Type:", details['degreeType'], screenHeight * 1),
             _buildDetailRow(
-                "7.5 SCH:", details['sevenPointFive'], screenHeight * 0.9),
-            _buildDetailRow("FG:", details['fg'], screenHeight * 0.9),
+                "7.5 SCH:", details['sevenPointFive'], screenHeight * 1),
+            _buildDetailRow("FG:", details['fg'], screenHeight * 1),
             _buildDetailRow(
-                "Post Metric:", details['postMatric'], screenHeight * 0.9),
-            _buildDetailRow("Batch:", details['batch'], screenHeight * 0.9),
-            _buildDetailRow("Active:", details['active'], screenHeight * 0.9),
+                "Post Metric:", details['postMatric'], screenHeight * 1),
+            _buildDetailRow("Batch:", details['batch'], screenHeight * 1),
+            _buildDetailRow("Active:", details['active'], screenHeight * 1),
           ],
         ),
       ),
@@ -706,5 +705,5 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
         SizedBox(height: screenHeight * 0.01),
       ],
     );
-  } 
+  }
 }

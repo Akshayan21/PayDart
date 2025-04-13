@@ -7,7 +7,7 @@ class DataFetchingService {
   Future<Map<String, dynamic>> fetchData() async {
     try {
       final uri = Uri.parse(
-          "https://run.mocky.io/v3/de3bf10a-b330-44a4-aa94-08208e9f72bf");
+          "https://run.mocky.io/v3/b69fdc3e-fa75-43c7-b4f2-c178b1821d62");
       final response = await http.get(uri);
 
       print("response body: ${response.body}");
@@ -42,7 +42,7 @@ class DataFetchingService {
 
   // Replace with your API endpoint
   final String apiUrl =
-      'https://run.mocky.io/v3/5b234937-02e5-4ecd-9686-8876b7da45c5';
+      'https://run.mocky.io/v3/b69fdc3e-fa75-43c7-b4f2-c178b1821d62';
 
   Future<Map<String, dynamic>> fetchDetails() async {
     try {

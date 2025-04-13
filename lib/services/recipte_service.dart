@@ -4,7 +4,7 @@ import 'package:pay_dart/models/data_modals.dart'; // Import the Recipt model
 
 class ReciptService {
   static const String apiUrl =
-      'https://run.mocky.io/v3/12c2b701-660a-4c9f-b213-7b06d1b0d994';
+      'https://run.mocky.io/v3/40431bcd-f7b9-4d04-a778-052e777019f0';
 
   Future<Recipt> fetchFeesReceipt(String studentId) async {
     try {

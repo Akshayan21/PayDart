@@ -5,7 +5,7 @@ import 'package:pay_dart/models/data_modals.dart'; // Import your model
 class AdditionalPaymentService {
   // Replace with your API endpoint for additional payments
   final String additionalPaymentApiUrl =
-      'https://run.mocky.io/v3/c1bdad3d-3010-4322-9a7f-35a0cc480bc6';
+      'https://run.mocky.io/v3/44301717-c9d4-4942-96c4-8baf1db04472';
 
   Future<List<AdditionalFeeData>> fetchAdditionalPaymentData() async {
     try {
