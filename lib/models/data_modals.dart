@@ -4,7 +4,7 @@
 class Api {
   final String institution;
   final String name;
-  final int dob;
+  final String dob; // Changed to String since it's likely a date string
   final String studentId;
   final String activestatus;
   final String course;
@@ -32,22 +32,21 @@ class Api {
     required this.active,
   });
 
-  // Factory constructor to create an instance from JSON
   factory Api.fromJson(Map<String, dynamic> json) {
     return Api(
-      institution: json['institution'] ?? 'N/A',
-      name: json['name'] ?? 'N/A',
-      dob: json['dob'] ?? 'N/A',
-      studentId: json['studentId'] ?? 'N/A',
-      activestatus: json['activestatus'] ?? 'N/A',
-      course: json['course'] ?? 'N/A',
-      degreetype: json['degreetype'] ?? 'N/A',
-      sch: json['sch'] ?? 'N/A',
-      fg: json['fg'] ?? 'N/A',
-      postmetric: json['postmetric'] ?? 'N/A',
-      department: json['department'] ?? 'N/A',
-      batch: json['batch'] ?? 'N/A',
-      active: json['active'] ?? 'N/A',
+      institution: json['institution']?.toString() ?? 'N/A',
+      name: json['name']?.toString() ?? 'N/A',
+      dob: json['dob']?.toString() ?? 'N/A',
+      studentId: json['studentId']?.toString() ?? 'N/A',
+      activestatus: json['activestatus']?.toString() ?? 'N/A',
+      course: json['course']?.toString() ?? 'N/A',
+      degreetype: json['degreetype']?.toString() ?? 'N/A',
+      sch: json['sch']?.toString() ?? 'N/A',
+      fg: json['fg']?.toString() ?? 'N/A',
+      postmetric: json['postmetric']?.toString() ?? 'N/A',
+      department: json['department']?.toString() ?? 'N/A',
+      batch: json['batch']?.toString() ?? 'N/A',
+      active: json['active']?.toString() ?? 'N/A',
     );
   }
 }
@@ -55,7 +54,7 @@ class Api {
 //fees details fetching model class
 class FeesData {
   final String term;
-  final int amount;
+  final double amount; // Changed to double for better precision
   final String dueDate;
   final String duration;
 
@@ -68,10 +67,30 @@ class FeesData {
 
   factory FeesData.fromJson(Map<String, dynamic> json) {
     return FeesData(
-      term: json['term'] ?? "N/A",
-      amount: json['amount'] ?? "N/A",
-      dueDate: json['dueDate'] ?? "N/A",
-      duration: json['duration'] ?? "N/A",
+      term: json['term']?.toString() ?? 'N/A',
+      amount: (json['amount'] ?? 0).toDouble(),
+      dueDate: json['dueDate']?.toString() ?? 'N/A',
+      duration: json['duration']?.toString() ?? 'N/A',
+    );
+  }
+}
+
+class Payment {
+  final double paidAmount;
+  final String date;
+  final String referenceNo;
+
+  Payment({
+    required this.paidAmount,
+    required this.date,
+    required this.referenceNo,
+  });
+
+  factory Payment.fromJson(Map<String, dynamic> json) {
+    return Payment(
+      paidAmount: (json['paidAmount'] ?? 0).toDouble(),
+      date: json['date']?.toString() ?? 'N/A',
+      referenceNo: json['referenceNo']?.toString() ?? 'N/A',
     );
   }
 }
@@ -92,10 +111,10 @@ class AdditionalFeeData {
 
   factory AdditionalFeeData.fromJson(Map<String, dynamic> json) {
     return AdditionalFeeData(
-      type: json['type'],
-      amount: (json['amount'] as num).toDouble(), // Ensure it's a double
-      dueDate: json['dueDate'],
-      duration: json['duration'],
+      type: json['type']?.toString() ?? 'N/A',
+      amount: (json['amount'] ?? 0).toDouble(),
+      dueDate: json['dueDate']?.toString() ?? 'N/A',
+      duration: json['duration']?.toString() ?? 'N/A',
     );
   }
 }
@@ -115,14 +134,14 @@ class PaymentHistory {
 
   factory PaymentHistory.fromJson(Map<String, dynamic> json) {
     return PaymentHistory(
-      type: json['type'] ?? 'Unknown', // Assign 'Unknown' if null
-      dueDate: json['dueDate'] ?? 'N/A', // Assign 'N/A' if null
-      duration: json['duration'] ?? 'N/A',
-      amount: (json['amount'] ?? 0).toDouble(), // Assign 0.0 if null
+      type: json['type']?.toString() ?? 'Unknown',
+      dueDate: json['dueDate']?.toString() ?? 'N/A',
+      duration: json['duration']?.toString() ?? 'N/A',
+      amount: (json['amount'] ?? 0).toDouble(),
     );
   }
 }
- 
+
 class Recipt {
   final String name;
   final String departement;
@@ -150,16 +169,16 @@ class Recipt {
 
   factory Recipt.fromJson(Map<String, dynamic> json) {
     return Recipt(
-      name: json['name'],
-      departement: json['departement'],
-      batch: json['batch'],
-      regno: json['regno'],
-      feestype: json['feestype'],
-      date: json['date'],
-      totalamount: (json['totalamount'] as num).toDouble(),
-      paidamount: (json['paidamount'] as num).toDouble(),
-      balanceamount: (json['balanceamount'] as num).toDouble(),
-      referenceno: json['referenceno'],
+      name: json['name']?.toString() ?? 'Unknown',
+      departement: json['departement']?.toString() ?? 'Unknown',
+      batch: json['batch']?.toString() ?? 'Unknown',
+      regno: json['regno']?.toString() ?? 'Unknown',
+      feestype: json['feestype']?.toString() ?? 'Unknown',
+      date: json['date']?.toString() ?? 'Unknown',
+      totalamount: (json['totalamount'] ?? 0).toDouble(),
+      paidamount: (json['paidamount'] ?? 0).toDouble(),
+      balanceamount: (json['balanceamount'] ?? 0).toDouble(),
+      referenceno: json['referenceno']?.toString() ?? 'Unknown',
     );
   }
 }

@@ -4,7 +4,7 @@ import 'package:pay_dart/models/data_modals.dart';
 
 class PaymentHistoryService {
   final String apiUrl =
-      'https://run.mocky.io/v3/7e76b878-0b5d-4a06-9f17-2d0b4d486c57';
+      'https://run.mocky.io/v3/227bb819-c633-4bd1-a74c-32f6796b6152';
 
   Future<List<PaymentHistory>> fetchPaymentHistory() async {
     try {

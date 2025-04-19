@@ -26,8 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
-    final url =
-        Uri.parse("https://dfe9-103-207-6-49.ngrok-free.app/auth/login");
+    final url = Uri.parse("http://10.0.2.2:3000/auth/login");
 
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
@@ -42,36 +41,66 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: jsonEncode({
           "studentId": username,
           "password": password,
         }),
+      )
+          .timeout(
+        Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception(
+              'Connection timeout. Please check your internet connection.');
+        },
       );
 
+      final responseData = jsonDecode(response.body);
+
       if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
+        if (responseData['token'] == null) {
+          _showError("Invalid response from server. Token not found.");
+          return;
+        }
 
         // Save token and username to SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', responseData['token']);
-        await prefs.setString('username', responseData['user']['studentId']);
+        await prefs.setString(
+            'username', responseData['user']?['studentId'] ?? username);
 
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => DetailsDisplayingScreen()),
         );
       } else {
-        _showError("Invalid username or password.");
+        final errorMessage =
+            responseData['message'] ?? 'Invalid username or password.';
+        _showError(errorMessage);
       }
     } catch (e) {
-      _showError("Failed to login. Please try again.");
+      String errorMessage = 'Failed to login. Please try again.';
+      if (e.toString().contains('timeout')) {
+        errorMessage =
+            'Connection timeout. Please check your internet connection.';
+      } else if (e.toString().contains('SocketException')) {
+        errorMessage =
+            'Cannot connect to server. Please check your internet connection.';
+      }
+      _showError(errorMessage);
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

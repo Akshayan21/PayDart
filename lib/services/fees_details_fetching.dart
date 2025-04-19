@@ -1,70 +1,149 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:http/http.dart' as http;
-import 'package:pay_dart/models/data_modals.dart';
 
 class FeesService {
-  Future<Map<String, dynamic>> fetchfess() async {
-    try {
-      final uri = Uri.parse(
-          "https://run.mocky.io/v3/a43d26e2-78ee-4540-afa3-2999e15369b7");
-      final response = await http.get(uri);
+  final String baseUrl = 'http://10.0.2.2:3000';
 
-      print("Fees Response: ${response.body}");
+  Future<Map<String, dynamic>> fetchFees(String studentId) async {
+    try {
+      final uri = Uri.parse('$baseUrl/fees/$studentId');
+      print("Fetching fees from URL: $uri");
+
+      final response = await http.get(uri).timeout(
+        Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Request timed out');
+        },
+      );
+
+      print("Fees Response for ID $studentId: ${response.body}");
+      print("Response status code: ${response.statusCode}");
+      print("Response headers: ${response.headers}");
 
       if (response.statusCode == 200) {
-        // Decode the JSON response
-        final decodedResponse = jsonDecode(response.body);
+        try {
+          // First, safely decode the JSON
+          final dynamic parsedData = json.decode(response.body);
 
-        // Check if the response is a list
-        if (decodedResponse is List) {
-          // Return the first item if the list is not empty
-          if (decodedResponse.isNotEmpty) {
-            return decodedResponse.first as Map<String, dynamic>;
-          } else {
-            throw Exception('Received an empty list from the server.');
+          // Debug print to see the exact structure
+          print("Parsed data type: ${parsedData.runtimeType}");
+          print("Parsed data: $parsedData");
+
+          // If null, return empty fees list
+          if (parsedData == null) {
+            print("Parsed data is null, returning empty fees list");
+            return {'fees': []};
           }
-        } else if (decodedResponse is Map<String, dynamic>) {
-          // Return the JSON object directly
-          return decodedResponse;
-        } else {
-          throw Exception('Unexpected JSON format.');
+
+          // Check if the response has a 'data' key
+          if (parsedData is Map<String, dynamic> &&
+              parsedData.containsKey('data')) {
+            print("Found 'data' key in response");
+            final Map<String, dynamic> dataMap = parsedData['data'];
+
+            // Convert the data map to a list of fee objects
+            final List<Map<String, dynamic>> feesList =
+                dataMap.entries.map((entry) {
+              final String term = entry.key;
+              final Map<String, dynamic> feeData = entry.value;
+
+              return {
+                'term': term,
+                'amount': feeData['amount'] ?? 0,
+                'dueDate': feeData['dueDate'] ?? "N/A",
+                'duration': "Term $term", // Adding a duration field
+              };
+            }).toList();
+
+            print("Converted data to fees list with ${feesList.length} items");
+            return {'fees': feesList};
+          }
+
+          // If it's already a list, wrap it in fees object
+          if (parsedData is List) {
+            print("Parsed data is a List with ${parsedData.length} items");
+            return {'fees': parsedData};
+          }
+
+          // If it's a map with fees key, return as is if fees is a list
+          if (parsedData is Map<String, dynamic>) {
+            print(
+                "Parsed data is a Map with keys: ${parsedData.keys.join(', ')}");
+            if (parsedData.containsKey('fees')) {
+              if (parsedData['fees'] is List) {
+                print(
+                    "Found 'fees' key with List value of length ${(parsedData['fees'] as List).length}");
+                return parsedData;
+              } else {
+                // If fees exists but is not a list, wrap it in a list
+                print(
+                    "Found 'fees' key but it's not a List, wrapping in a list");
+                return {
+                  'fees': [parsedData['fees']]
+                };
+              }
+            }
+            // If no fees key found, wrap the entire map in a list
+            print("No 'fees' key found, wrapping the entire map in a list");
+            return {
+              'fees': [parsedData]
+            };
+          }
+
+          // For any other type, wrap in a list
+          print("Parsed data is neither List nor Map, wrapping in a list");
+          return {
+            'fees': [parsedData]
+          };
+        } catch (e) {
+          print('JSON parsing error: $e');
+          print('Response body length: ${response.body.length}');
+          print(
+              'Response body first 100 chars: ${response.body.substring(0, min(100, response.body.length))}');
+          // Return empty fees list on error
+          return {'fees': []};
         }
       } else {
-        throw Exception(
-            'Failed to load data. Status code: ${response.statusCode}');
+        print('HTTP Error: Status code ${response.statusCode}');
+        print('Response body: ${response.body}');
+        // Return empty fees list on error
+        return {'fees': []};
       }
     } catch (e) {
-      print('Error: $e');
-      throw Exception('Error fetching details');
+      print('API Error: $e');
+      // Return empty fees list on error
+      return {'fees': []};
     }
   }
 
-  // Replace with your API endpoint
-  final String apiUrl =
-      'https://run.mocky.io/v3/a43d26e2-78ee-4540-afa3-2999e15369b7';
-
-  Future<Map<String, dynamic>> fetchFees() async {
+  Future<Map<String, dynamic>> fetchStudentData(String studentId) async {
     try {
-      final response = await http.get(Uri.parse(apiUrl));
-      print("Fees Response: ${response.body}");
+      final uri = Uri.parse('$baseUrl/students/$studentId');
+      final response = await http.get(uri);
+
+      print("Student Data Response for ID $studentId: ${response.body}");
+      print("Response status code: ${response.statusCode}");
+      print("Response headers: ${response.headers}");
 
       if (response.statusCode == 200) {
-        final decodedData = jsonDecode(response.body);
-
-        if (decodedData is List) {
-          // Convert list into a map if needed
-          return {"fees": decodedData};
-        } else if (decodedData is Map<String, dynamic>) {
-          return decodedData;
-        } else {
-          throw Exception("Unexpected response format");
+        try {
+          final Map<String, dynamic> data = json.decode(response.body);
+          return data;
+        } catch (e) {
+          print('JSON parsing error: $e');
+          print('Response body length: ${response.body.length}');
+          print(
+              'Response body first 100 chars: ${response.body.substring(0, min(100, response.body.length))}');
+          throw Exception('Failed to parse JSON response: $e');
         }
       } else {
-        throw Exception('Failed to load data');
+        throw Exception(
+            'Failed to load student data. Status code: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error: $e');
-      throw Exception('Error fetching details');
+      print('API Error: $e');
+      throw Exception('Error fetching student details: $e');
     }
   }
 }

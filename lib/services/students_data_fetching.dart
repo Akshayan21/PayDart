@@ -1,62 +1,76 @@
-// ignore_for_file: unused_import, prefer_const_constructors, unnecessary_type_check, dead_code_catch_following_catch, avoid_print, prefer_const_declarations
 import 'dart:convert';
+import 'dart:math';
 import 'package:http/http.dart' as http;
-import 'package:pay_dart/models/data_modals.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DataFetchingService {
+  final String baseUrl =
+      'https://run.mocky.io/v3/23b39989-a80c-4eba-8882-cf8789ffadb4';
+
   Future<Map<String, dynamic>> fetchData() async {
     try {
-      final uri = Uri.parse(
-          "https://run.mocky.io/v3/b69fdc3e-fa75-43c7-b4f2-c178b1821d62");
+      final prefs = await SharedPreferences.getInstance();
+      final studentId = prefs.getString('username');
+
+      if (studentId == null) {
+        throw Exception('Student ID not found in SharedPreferences');
+      }
+
+      final uri = Uri.parse('$baseUrl');
       final response = await http.get(uri);
 
-      print("response body: ${response.body}");
+      print("Student Data Response for ID $studentId: ${response.body}");
+      print("Response status code: ${response.statusCode}");
+      print("Response headers: ${response.headers}");
 
       if (response.statusCode == 200) {
-        // Decode the JSON response
-        final decodedResponse = jsonDecode(response.body);
-
-        // Check if the response is a list
-        if (decodedResponse is List) {
-          // Return the first item if the list is not empty
-          if (decodedResponse.isNotEmpty) {
-            return decodedResponse.first as Map<String, dynamic>;
-          } else {
-            throw Exception('Received an empty list from the server.');
-          }
-        } else if (decodedResponse is Map<String, dynamic>) {
-          // Return the JSON object directly
-          return decodedResponse;
-        } else {
-          throw Exception('Unexpected JSON format.');
+        try {
+          final Map<String, dynamic> data = json.decode(response.body);
+          return data;
+        } catch (e) {
+          print('JSON parsing error: $e');
+          print('Response body length: ${response.body.length}');
+          print(
+              'Response body first 100 chars: ${response.body.substring(0, min(100, response.body.length))}');
+          throw Exception('Failed to parse JSON response: $e');
         }
       } else {
         throw Exception(
-            'Failed to load data. Status code: ${response.statusCode}');
+            'Failed to load student data. Status code: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error: $e');
-      throw Exception('Error fetching details');
+      print('API Error: $e');
+      throw Exception('Error fetching student details: $e');
     }
   }
 
-  // Replace with your API endpoint
-  final String apiUrl =
-      'https://run.mocky.io/v3/b69fdc3e-fa75-43c7-b4f2-c178b1821d62';
-
-  Future<Map<String, dynamic>> fetchDetails() async {
+  Future<Map<String, dynamic>> fetchStudentData(String studentId) async {
     try {
-      final response = await http.get(Uri.parse(apiUrl));
+      final uri = Uri.parse('$baseUrl/students/$studentId');
+      final response = await http.get(uri);
+
+      print("Student Data Response for ID $studentId: ${response.body}");
+      print("Response status code: ${response.statusCode}");
+      print("Response headers: ${response.headers}");
 
       if (response.statusCode == 200) {
-        // Parse the JSON data
-        return jsonDecode(response.body);
+        try {
+          final Map<String, dynamic> data = json.decode(response.body);
+          return data;
+        } catch (e) {
+          print('JSON parsing error: $e');
+          print('Response body length: ${response.body.length}');
+          print(
+              'Response body first 100 chars: ${response.body.substring(0, min(100, response.body.length))}');
+          throw Exception('Failed to parse JSON response: $e');
+        }
       } else {
-        throw Exception('Failed to load data');
+        throw Exception(
+            'Failed to load student data. Status code: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error: $e');
-      throw Exception('Error fetching details');
+      print('API Error: $e');
+      throw Exception('Error fetching student details: $e');
     }
   }
 }

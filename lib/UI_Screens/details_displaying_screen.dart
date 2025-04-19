@@ -14,6 +14,7 @@ import 'package:pay_dart/services/fees_details_fetching.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:pay_dart/UI_Screens/login_screen.dart';
 
 class DetailsDisplayingScreen extends StatefulWidget {
   const DetailsDisplayingScreen({super.key});
@@ -76,8 +77,15 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
   }
 
   Future<Map<String, dynamic>> _fetchFees() async {
+    final prefs = await SharedPreferences.getInstance();
+    final studentId =
+        prefs.getString('username'); // Assuming username is the student ID
+    if (studentId == null) {
+      throw Exception('Student ID not found');
+    }
+
     FeesService service = FeesService();
-    return await service.fetchFees();
+    return await service.fetchFees(studentId);
   }
 
   Future<bool> requestStoragePermission() async {
@@ -138,6 +146,29 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
     }
   }
 
+  // Logout function
+  Future<void> _logout() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      // Clear stored credentials
+      await prefs.remove('auth_token');
+      await prefs.remove('username');
+
+      // Navigate to login screen
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+        );
+      }
+    } catch (e) {
+      print('Error during logout: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error during logout: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
@@ -159,31 +190,135 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
           return SingleChildScrollView(
             child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 50.0, right: 250.0),
-                  child: Text(
-                    "Details",
-                    style: GoogleFonts.poppins(
-                      fontSize: screenHeight * 0.03,
-                      fontWeight: FontWeight.w500,
+                // Header with title and logout button
+                Container(
+                  padding: EdgeInsets.only(
+                      top: 50.0, left: 20.0, right: 20.0, bottom: 10.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Details",
+                        style: GoogleFonts.poppins(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        icon: Icon(Icons.logout, color: Colors.white, size: 18),
+                        label: Text(
+                          "Logout",
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                        onPressed: _logout,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Details container
+                Container(
+                  margin: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                  height: screenHeight * 0.45,
+                  width: screenWidth,
+                  decoration: BoxDecoration(
+                    color: Color.fromARGB(255, 243, 242, 242),
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.3),
+                        spreadRadius: 2,
+                        blurRadius: 5,
+                        offset: Offset(0, 3),
+                      )
+                    ],
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(15),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildDetailRow("Institution:", details['institution'],
+                            screenHeight),
+                        _buildDetailRow("Name:", details['name'], screenHeight),
+                        _buildDetailRow("D.O.B:", details['dob'], screenHeight),
+                        _buildDetailRow(
+                            "Student ID:", details['studentId'], screenHeight),
+                        _buildDetailRow(
+                            "Course:", details['course'], screenHeight),
+                        _buildDetailRow("Degree Type:", details['degreeType'],
+                            screenHeight),
+                        _buildDetailRow("7.5 SCH:", details['sevenPointFive'],
+                            screenHeight),
+                        _buildDetailRow("FG:", details['fg'], screenHeight),
+                        _buildDetailRow("Post Metric:", details['postMatric'],
+                            screenHeight),
+                        _buildDetailRow(
+                            "Batch:", details['batch'], screenHeight),
+                        _buildDetailRow(
+                            "Active:", details['active'], screenHeight),
+                      ],
                     ),
                   ),
                 ),
-                SizedBox(height: screenHeight * 0.01),
-                _buildDetailsContainer(details, screenHeight, screenWidth),
-                SizedBox(height: screenHeight * 0.01),
-                TabBar(
-                  controller: _tabController,
-                  labelColor: Colors.black,
-                  indicatorColor: Colors.blue,
-                  tabs: const <Widget>[
-                    Tab(text: "Upcoming\n Payment"),
-                    Tab(text: "Payment\n History"),
-                    Tab(text: "Additional"),
-                  ],
+
+                // Tab bar
+                Container(
+                  margin: EdgeInsets.symmetric(horizontal: 15),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(15),
+                      topRight: Radius.circular(15),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.2),
+                        spreadRadius: 1,
+                        blurRadius: 3,
+                        offset: Offset(0, -1),
+                      )
+                    ],
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: Colors.blue,
+                    unselectedLabelColor: Colors.grey,
+                    indicatorColor: Colors.blue,
+                    indicatorWeight: 3,
+                    labelStyle: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                    unselectedLabelStyle: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                    tabs: const <Widget>[
+                      Tab(text: "Upcoming\nPayment"),
+                      Tab(text: "Payment\nHistory"),
+                      Tab(text: "Additional"),
+                    ],
+                  ),
                 ),
-                SizedBox(
+
+                // Tab content
+                Container(
                   height: screenHeight * 0.5,
+                  margin: EdgeInsets.only(
+                      top: 1), // Add a small top margin to connect with tab bar
                   child: TabBarView(
                     controller: _tabController,
                     children: <Widget>[
@@ -201,84 +336,84 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
     );
   }
 
-  Widget _buildDetailsContainer(
-      Map<String, dynamic> details, double screenHeight, double screenWidth) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 5),
-      height: screenHeight * 0.45,
-      width: screenWidth * 1,
-      decoration: BoxDecoration(
-        color: Color.fromARGB(255, 243, 242, 242),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.5),
-            spreadRadius: 3,
-            blurRadius: 5,
-            offset: Offset(2, 5),
-          )
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.only(left: 10, top: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDetailRow(
-                "Institution:", details['institution'], screenHeight * 1),
-            _buildDetailRow("Name:", details['name'], screenHeight * 1),
-            _buildDetailRow("D.O.B:", details['dob'], screenHeight * 1),
-            _buildDetailRow(
-                "Student ID:", details['studentId'], screenHeight * 1),
-            _buildDetailRow("Course:", details['course'], screenHeight * 1),
-            _buildDetailRow(
-                "Degree Type:", details['degreeType'], screenHeight * 1),
-            _buildDetailRow(
-                "7.5 SCH:", details['sevenPointFive'], screenHeight * 1),
-            _buildDetailRow("FG:", details['fg'], screenHeight * 1),
-            _buildDetailRow(
-                "Post Metric:", details['postMatric'], screenHeight * 1),
-            _buildDetailRow("Batch:", details['batch'], screenHeight * 1),
-            _buildDetailRow("Active:", details['active'], screenHeight * 1),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildUpcomingPaymentsTab(double screenHeight) {
     return FutureBuilder<Map<String, dynamic>>(
       future: futureFees,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
+          print("Waiting for fees data...");
           return Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
+          print("Error fetching fees: ${snapshot.error}");
           return Center(child: Text('Error: ${snapshot.error}'));
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        } else if (!snapshot.hasData) {
+          print("No fees data available");
           return Center(child: Text('No upcoming payments'));
         }
 
-        final data = snapshot.data!;
-        final List<dynamic> feesList = data['fees'];
+        final Map<String, dynamic> data = snapshot.data!;
 
-        final terms = feesList.map((fee) {
-          return {
-            'term': fee['term'],
-            'amount': fee['amount'],
-            'dueDate': fee['dueDate'],
-            'duration': fee['duration']
-          };
-        }).toList();
+        // Debug print to see the structure of the response
+        print("UI Fees data structure: $data");
+        print("UI Fees data keys: ${data.keys.join(', ')}");
+
+        // Always expect a 'fees' list in the response
+        final List<dynamic> feesList = data['fees'] ?? [];
+        print("UI Fees list length: ${feesList.length}");
+
+        if (feesList.isEmpty) {
+          print("Fees list is empty, showing 'No payments due' message");
+          return Center(child: Text('No payments due'));
+        }
+
+        // Print the first few items in the fees list for debugging
+        if (feesList.isNotEmpty) {
+          print("First fee item: ${feesList.first}");
+          if (feesList.length > 1) {
+            print("Second fee item: ${feesList[1]}");
+          }
+        }
+
+        final terms = feesList
+            .map((fee) {
+              if (fee == null) {
+                print("Found null fee item, skipping");
+                return null;
+              }
+              print("Processing fee item: $fee");
+              return {
+                'term': fee['term'] ?? "N/A",
+                'amount': fee['amount'] ?? 0,
+                'dueDate': fee['dueDate'] ?? "N/A",
+                'duration': fee['duration'] ?? "N/A",
+              };
+            })
+            .where((term) => term != null)
+            .cast<Map<String, dynamic>>()
+            .toList();
+
+        print("Processed terms length: ${terms.length}");
+        if (terms.isNotEmpty) {
+          print("First processed term: ${terms.first}");
+        }
 
         final filteredTerms = terms
             .where((term) => term['amount'] != null && term['amount'] > 0)
             .toList();
 
+        print("Filtered terms length: ${filteredTerms.length}");
+        if (filteredTerms.isNotEmpty) {
+          print("First filtered term: ${filteredTerms.first}");
+        }
+
         if (filteredTerms.isEmpty) {
+          print("No terms with amount > 0, showing 'No payments due' message");
           return Center(child: Text('No payments due'));
         }
 
         if (isCheckedList.length != filteredTerms.length) {
+          print(
+              "Resizing isCheckedList and amountControllers to match filteredTerms length: ${filteredTerms.length}");
           isCheckedList = List<bool>.filled(filteredTerms.length, false);
           amountControllers = List.generate(
             filteredTerms.length,
@@ -286,79 +421,93 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
           );
         }
 
+        print("Building ListView with ${filteredTerms.length} items");
         return Container(
           height: MediaQuery.of(context).size.height * 0.8,
           child: ListView.builder(
+            padding: EdgeInsets.only(top: 5, bottom: 10, left: 15, right: 15),
             itemCount: filteredTerms.length,
             itemBuilder: (context, index) {
               final term = filteredTerms[index];
-              final paidAmount = (term['paid'] as List<dynamic>?)?.fold(0,
-                      (sum, item) => sum + (item['paidAmount'] as int? ?? 0)) ??
-                  0;
-              final isEnabled = index == 0 ||
-                  ((index > 0 &&
-                      paidAmount >= (filteredTerms[index - 1]['amount'] ?? 0)));
-
+              print("Building ListView item $index: $term");
               return Card(
-                elevation: 3,
-                margin: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                elevation: 2,
+                margin: EdgeInsets.only(bottom: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Column(
                   children: [
                     ListTile(
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       leading: Checkbox(
                         value: isCheckedList[index],
-                        onChanged: isEnabled
-                            ? (bool? value) {
-                                setState(() {
-                                  isCheckedList[index] = value ?? false;
-                                });
-                              }
-                            : null,
+                        onChanged: (bool? value) {
+                          setState(() {
+                            isCheckedList[index] = value ?? false;
+                          });
+                        },
                       ),
                       title: Text(
-                        term['term'],
+                        term['term']?.toString() ?? 'N/A',
                         style: GoogleFonts.poppins(
-                          fontSize: screenHeight * 0.02,
-                          fontWeight: FontWeight.w500,
-                          color: isEnabled ? Colors.black : Colors.grey,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       trailing: Text(
-                        "₹ ${(term['amount'] ?? 0) - paidAmount}",
+                        "₹ ${term['amount']?.toString() ?? '0'}",
                         style: GoogleFonts.poppins(
-                          fontSize: screenHeight * 0.02,
-                          fontWeight: FontWeight.w500,
-                          color: paidAmount >= term['amount']
-                              ? Colors.green
-                              : Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
                         ),
                       ),
-                      subtitle: Text(
-                        "Due Date: ${term['dueDate']}",
-                        style: GoogleFonts.poppins(
-                          fontSize: screenHeight * 0.015,
-                          color: Colors.grey,
+                      subtitle: Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Due Date: ${term['dueDate']?.toString() ?? 'N/A'}",
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              "Duration: ${term['duration']?.toString() ?? 'N/A'}",
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                     if (isCheckedList[index]) ...[
                       Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
+                            horizontal: 16, vertical: 8),
                         child: TextField(
                           controller: amountControllers[index],
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
                             labelText: "Enter Amount",
-                            border: OutlineInputBorder(),
+                            labelStyle: GoogleFonts.poppins(),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                           ),
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.all(8.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: ElevatedButton(
                           onPressed: () async {
                             final prefs = await SharedPreferences.getInstance();
@@ -369,7 +518,6 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                               );
                               return;
                             }
-                            final selectedTerm = term['term'];
                             final paymentAmt = double.tryParse(
                                     amountControllers[index].text) ??
                                 0;
@@ -388,7 +536,8 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                                 headers: {'Content-Type': 'application/json'},
                                 body: jsonEncode({
                                   'studentId': studentId,
-                                  'selectedTerm': selectedTerm,
+                                  'selectedTerm':
+                                      term['term']?.toString() ?? '',
                                   'paymentAmt': paymentAmt,
                                 }),
                               );
@@ -396,7 +545,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                        'Payment successful for $selectedTerm'),
+                                        'Payment successful for ${term['term']?.toString() ?? "N/A"}'),
                                   ),
                                 );
                                 setState(() {
@@ -421,10 +570,19 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                           },
                           child: Text(
                             "Pay Now",
-                            style: TextStyle(color: Colors.white),
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
+                            ),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                         ),
                       ),
@@ -447,13 +605,28 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
           return Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return Center(
-            child: Text(
-              'Error: ${snapshot.error}\nPlease check the API response or try again later.',
-              style: TextStyle(color: Colors.red),
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Text(
+                'Error: ${snapshot.error}\nPlease check the API response or try again later.',
+                style: GoogleFonts.poppins(
+                  color: Colors.red,
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
           );
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(child: Text('No Payment History Found'));
+          return Center(
+            child: Text(
+              'No Payment History Found',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                color: Colors.grey[700],
+              ),
+            ),
+          );
         }
 
         List<PaymentHistory> paymentList = snapshot.data!;
@@ -461,54 +634,83 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
         return Container(
           height: MediaQuery.of(context).size.height * 0.8,
           child: ListView.builder(
+            padding: EdgeInsets.only(top: 5, bottom: 10, left: 15, right: 15),
             itemCount: paymentList.length,
             itemBuilder: (context, index) {
               final fees = paymentList[index];
               return Card(
-                elevation: 3,
-                margin: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                elevation: 2,
+                margin: EdgeInsets.only(bottom: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Column(
                   children: [
                     ListTile(
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       title: Text(
                         fees.type,
                         style: GoogleFonts.poppins(
-                          fontSize: screenHeight * 0.02,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       trailing: Text(
                         "₹ ${fees.amount}",
                         style: GoogleFonts.poppins(
-                          fontSize: screenHeight * 0.02,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                           color: Colors.black,
                         ),
                       ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Due Date: ${fees.dueDate}"),
-                          Text("Duration: ${fees.duration}"),
-                        ],
+                      subtitle: Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Due Date: ${fees.dueDate}",
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              "Duration: ${fees.duration}",
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      padding: const EdgeInsets.all(16.0),
                       child: ElevatedButton.icon(
-                        icon: Icon(Icons.download, color: Colors.white),
+                        icon:
+                            Icon(Icons.download, color: Colors.white, size: 18),
                         label: Text(
                           "Download Receipt",
-                          style: TextStyle(color: Colors.white),
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                          ),
                         ),
                         onPressed: () {
                           downloadpdf(); // Call the downloadpdf function
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
@@ -530,13 +732,28 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
           return Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return Center(
-            child: Text(
-              'Error: ${snapshot.error}\nPlease check the API response or try again later.',
-              style: TextStyle(color: Colors.red),
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Text(
+                'Error: ${snapshot.error}\nPlease check the API response or try again later.',
+                style: GoogleFonts.poppins(
+                  color: Colors.red,
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
           );
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(child: Text('No additional fees'));
+          return Center(
+            child: Text(
+              'No additional fees',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                color: Colors.grey[700],
+              ),
+            ),
+          );
         }
 
         List<AdditionalFeeData> datalist = snapshot.data!;
@@ -546,7 +763,15 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
             .toList();
 
         if (filteredFees.isEmpty) {
-          return Center(child: Text('No additional fees due'));
+          return Center(
+            child: Text(
+              'No additional fees due',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                color: Colors.grey[700],
+              ),
+            ),
+          );
         }
 
         if (isCheckedList.length != filteredFees.length) {
@@ -560,6 +785,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
         return Container(
           height: MediaQuery.of(context).size.height * 0.8,
           child: ListView.builder(
+            padding: EdgeInsets.only(top: 5, bottom: 10, left: 15, right: 15),
             itemCount: filteredFees.length,
             itemBuilder: (context, index) {
               final fee = filteredFees[index];
@@ -567,14 +793,16 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                   index == 0 || ((index > 0 && isCheckedList[index - 1]));
 
               return Card(
-                elevation: 3,
-                margin: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                elevation: 2,
+                margin: EdgeInsets.only(bottom: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Column(
                   children: [
                     ListTile(
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       leading: Checkbox(
                         value: isCheckedList[index],
                         onChanged: isEnabled
@@ -588,30 +816,63 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                       title: Text(
                         fee.type,
                         style: GoogleFonts.poppins(
-                          fontSize: screenHeight * 0.02,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                           color: isEnabled ? Colors.black : Colors.grey,
                         ),
                       ),
                       trailing: Text(
                         "₹ ${fee.amount}",
                         style: GoogleFonts.poppins(
-                          fontSize: screenHeight * 0.02,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                           color: Colors.black,
                         ),
                       ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Due Date: ${fee.dueDate}"),
-                          Text("Duration: ${fee.duration}"),
-                        ],
+                      subtitle: Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Due Date: ${fee.dueDate}",
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              "Duration: ${fee.duration}",
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     if (isCheckedList[index]) ...[
                       Padding(
-                        padding: const EdgeInsets.all(8.0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: TextField(
+                          controller: amountControllers[index],
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: "Enter Amount",
+                            labelStyle: GoogleFonts.poppins(),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
                         child: ElevatedButton(
                           onPressed: () async {
                             final prefs = await SharedPreferences.getInstance();
@@ -673,10 +934,19 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                           },
                           child: Text(
                             "Pay Now",
-                            style: TextStyle(color: Colors.white),
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
+                            ),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                         ),
                       ),
@@ -692,18 +962,30 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
   }
 
   Widget _buildDetailRow(String label, String? value, double screenHeight) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "$label ${value ?? ''}",
-          style: GoogleFonts.poppins(
-            fontSize: screenHeight * 0.02,
-            fontWeight: FontWeight.w500,
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "$label ",
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[800],
+            ),
           ),
-        ),
-        SizedBox(height: screenHeight * 0.01),
-      ],
+          Expanded(
+            child: Text(
+              value ?? 'N/A',
+              style: GoogleFonts.poppins(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
