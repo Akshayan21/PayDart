@@ -4,8 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DataFetchingService {
-  final String baseUrl =
-      'https://run.mocky.io/v3/23b39989-a80c-4eba-8882-cf8789ffadb4';
+  final String baseUrl = 'http://10.0.2.2:3000';
 
   Future<Map<String, dynamic>> fetchData() async {
     try {
@@ -16,7 +15,7 @@ class DataFetchingService {
         throw Exception('Student ID not found in SharedPreferences');
       }
 
-      final uri = Uri.parse('$baseUrl');
+      final uri = Uri.parse('$baseUrl/students/$studentId');
       final response = await http.get(uri);
 
       print("Student Data Response for ID $studentId: ${response.body}");

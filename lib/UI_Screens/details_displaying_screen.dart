@@ -67,13 +67,27 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
   }
 
   Future<List<AdditionalFeeData>> _fetchAdditionalFees() async {
+    final prefs = await SharedPreferences.getInstance();
+    final studentId =
+        prefs.getString('username'); // Assuming username is the student ID
+    if (studentId == null) {
+      throw Exception('Student ID not found');
+    }
+
     AdditionalPaymentService service = AdditionalPaymentService();
-    return await service.fetchAdditionalPaymentData();
+    return await service.fetchAdditionalPaymentData(studentId);
   }
 
   Future<List<PaymentHistory>> _fetchPaymentHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final studentId =
+        prefs.getString('username'); // Assuming username is the student ID
+    if (studentId == null) {
+      throw Exception('Student ID not found');
+    }
+
     PaymentHistoryService service = PaymentHistoryService();
-    return await service.fetchPaymentHistory();
+    return await service.fetchPaymentHistory(studentId);
   }
 
   Future<Map<String, dynamic>> _fetchFees() async {
@@ -186,7 +200,15 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
           } else if (!snapshot.hasData) {
             return Center(child: Text('No data found'));
           }
-          Map<String, dynamic> details = snapshot.data!;
+
+          // Extract the data from the response
+          Map<String, dynamic> response = snapshot.data!;
+          print("Full response data: $response");
+
+          // Get the data object from the response
+          Map<String, dynamic> details = response['data'] ?? {};
+          print("Student details: $details");
+
           return SingleChildScrollView(
             child: Column(
               children: [
@@ -250,25 +272,28 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildDetailRow("Institution:", details['institution'],
-                            screenHeight),
-                        _buildDetailRow("Name:", details['name'], screenHeight),
-                        _buildDetailRow("D.O.B:", details['dob'], screenHeight),
+                        _buildDetailRow("Institution:",
+                            details['institution']?.toString(), screenHeight),
                         _buildDetailRow(
-                            "Student ID:", details['studentId'], screenHeight),
+                            "Name:", details['name']?.toString(), screenHeight),
                         _buildDetailRow(
-                            "Course:", details['course'], screenHeight),
-                        _buildDetailRow("Degree Type:", details['degreeType'],
-                            screenHeight),
-                        _buildDetailRow("7.5 SCH:", details['sevenPointFive'],
-                            screenHeight),
-                        _buildDetailRow("FG:", details['fg'], screenHeight),
-                        _buildDetailRow("Post Metric:", details['postMatric'],
+                            "D.O.B:", details['dob']?.toString(), screenHeight),
+                        _buildDetailRow("Student ID:",
+                            details['studentId']?.toString(), screenHeight),
+                        _buildDetailRow("Course:",
+                            details['course']?.toString(), screenHeight),
+                        _buildDetailRow("Degree Type:",
+                            details['degreeType']?.toString(), screenHeight),
+                        _buildDetailRow("7.5 SCH:", details['sch']?.toString(),
                             screenHeight),
                         _buildDetailRow(
-                            "Batch:", details['batch'], screenHeight),
-                        _buildDetailRow(
-                            "Active:", details['active'], screenHeight),
+                            "FG:", details['fg']?.toString(), screenHeight),
+                        _buildDetailRow("Post Metric:",
+                            details['postMetric']?.toString(), screenHeight),
+                        _buildDetailRow("Batch:", details['batch']?.toString(),
+                            screenHeight),
+                        _buildDetailRow("Active:",
+                            details['active']?.toString(), screenHeight),
                       ],
                     ),
                   ),
@@ -601,35 +626,96 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
     return FutureBuilder<List<PaymentHistory>>(
       future: futurePaymentHistory,
       builder: (context, snapshot) {
+        print(
+            "Payment History Tab - Connection State: ${snapshot.connectionState}");
+        print("Payment History Tab - Has Error: ${snapshot.hasError}");
+        if (snapshot.hasError) {
+          print("Payment History Tab - Error: ${snapshot.error}");
+        }
+        print("Payment History Tab - Has Data: ${snapshot.hasData}");
+        if (snapshot.hasData) {
+          print("Payment History Tab - Data Length: ${snapshot.data!.length}");
+          print(
+              "Payment History Tab - First Item: ${snapshot.data!.firstOrNull}");
+        }
+
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text(
+                  'Loading Payment History...',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+          );
         } else if (snapshot.hasError) {
           return Center(
             child: Padding(
               padding: EdgeInsets.all(20),
-              child: Text(
-                'Error: ${snapshot.error}\nPlease check the API response or try again later.',
-                style: GoogleFonts.poppins(
-                  color: Colors.red,
-                  fontSize: 16,
-                ),
-                textAlign: TextAlign.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  SizedBox(height: 16),
+                  Text(
+                    'Error Loading Payment History',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.red,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    '${snapshot.error}\nPlease check your connection and try again.',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.grey[700],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
           );
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return Center(
-            child: Text(
-              'No Payment History Found',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                color: Colors.grey[700],
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.history, size: 48, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(
+                  'No Payment History Found',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Your payment history will appear here',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
             ),
           );
         }
 
         List<PaymentHistory> paymentList = snapshot.data!;
+        print("Payment History Tab - Processing ${paymentList.length} items");
 
         return Container(
           height: MediaQuery.of(context).size.height * 0.8,
@@ -638,47 +724,73 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
             itemCount: paymentList.length,
             itemBuilder: (context, index) {
               final fees = paymentList[index];
+              print(
+                  "Payment History Tab - Building item $index: ${fees.type} - ${fees.amount}");
+
               return Card(
                 elevation: 2,
                 margin: EdgeInsets.only(bottom: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Column(
-                  children: [
-                    ListTile(
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      title: Text(
-                        fees.type,
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      trailing: Text(
-                        "₹ ${fees.amount}",
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black,
-                        ),
-                      ),
-                      subtitle: Padding(
-                        padding: EdgeInsets.only(top: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Due Date: ${fees.dueDate}",
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            fees.type,
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '₹${fees.amount.toStringAsFixed(2)}',
                               style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                color: Colors.grey[700],
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.orange[800],
                               ),
                             ),
-                            SizedBox(height: 4),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Icon(Icons.calendar_today,
+                              size: 16, color: Colors.grey[600]),
+                          SizedBox(width: 8),
+                          Text(
+                            'Due Date: ${fees.dueDate}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (fees.duration != null &&
+                          fees.duration!.isNotEmpty) ...[
+                        SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(Icons.timer,
+                                size: 16, color: Colors.grey[600]),
+                            SizedBox(width: 8),
                             Text(
-                              "Duration: ${fees.duration}",
+                              'Duration: ${fees.duration}',
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 color: Colors.grey[700],
@@ -686,35 +798,9 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: ElevatedButton.icon(
-                        icon:
-                            Icon(Icons.download, color: Colors.white, size: 18),
-                        label: Text(
-                          "Download Receipt",
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 16,
-                          ),
-                        ),
-                        onPressed: () {
-                          downloadpdf(); // Call the downloadpdf function
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                      ],
+                    ],
+                  ),
                 ),
               );
             },
@@ -728,53 +814,150 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
     return FutureBuilder<List<AdditionalFeeData>>(
       future: futureAdditionalFees,
       builder: (context, snapshot) {
+        print("\n=== Additional Fees Tab Builder ===");
+        print("Connection State: ${snapshot.connectionState}");
+        print("Has Error: ${snapshot.hasError}");
+        if (snapshot.hasError) {
+          print("Error: ${snapshot.error}");
+        }
+        print("Has Data: ${snapshot.hasData}");
+        if (snapshot.hasData) {
+          print("Data Length: ${snapshot.data!.length}");
+          if (snapshot.data!.isNotEmpty) {
+            print(
+                "First Item: ${snapshot.data!.first.type} - ${snapshot.data!.first.amount}");
+          }
+        }
+
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          print("Showing loading indicator");
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text(
+                  "Loading additional fees...",
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+          );
         } else if (snapshot.hasError) {
+          print("Showing error state");
           return Center(
             child: Padding(
               padding: EdgeInsets.all(20),
-              child: Text(
-                'Error: ${snapshot.error}\nPlease check the API response or try again later.',
-                style: GoogleFonts.poppins(
-                  color: Colors.red,
-                  fontSize: 16,
-                ),
-                textAlign: TextAlign.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  SizedBox(height: 16),
+                  Text(
+                    'Error: ${snapshot.error}\nPlease check the API response or try again later.',
+                    style: GoogleFonts.poppins(
+                      color: Colors.red,
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      print("Retrying data fetch");
+                      setState(() {
+                        futureAdditionalFees = _fetchAdditionalFees();
+                      });
+                    },
+                    child: Text("Retry"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
+                ],
               ),
             ),
           );
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          print("Showing empty state");
           return Center(
-            child: Text(
-              'No additional fees',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                color: Colors.grey[700],
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue, size: 48),
+                SizedBox(height: 16),
+                Text(
+                  'No additional fees found',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'There are no additional fees for your account',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
           );
         }
 
         List<AdditionalFeeData> datalist = snapshot.data!;
+        print("\n=== Processing Additional Fees Data ===");
+        print("Total items: ${datalist.length}");
 
+        // Filter out any fees with null or zero amount
         final filteredFees = datalist
             .where((fee) => fee.amount != null && fee.amount > 0)
             .toList();
+        print("Filtered items: ${filteredFees.length}");
 
         if (filteredFees.isEmpty) {
+          print("Showing no fees due state");
           return Center(
-            child: Text(
-              'No additional fees due',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                color: Colors.grey[700],
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.check_circle_outline, color: Colors.green, size: 48),
+                SizedBox(height: 16),
+                Text(
+                  'No additional fees due',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'You have no pending additional fees to pay',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
           );
         }
 
+        // Initialize the checkbox and controller lists if needed
         if (isCheckedList.length != filteredFees.length) {
+          print(
+              "Resizing checkbox and controller lists to ${filteredFees.length}");
           isCheckedList = List<bool>.filled(filteredFees.length, false);
           amountControllers = List.generate(
             filteredFees.length,
@@ -782,6 +965,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
           );
         }
 
+        print("Building ListView with ${filteredFees.length} items");
         return Container(
           height: MediaQuery.of(context).size.height * 0.8,
           child: ListView.builder(
@@ -789,6 +973,9 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
             itemCount: filteredFees.length,
             itemBuilder: (context, index) {
               final fee = filteredFees[index];
+              print("\nBuilding item $index: ${fee.type} - ${fee.amount}");
+
+              // Enable checkbox if it's the first item or if the previous item is checked
               final isEnabled =
                   index == 0 || ((index > 0 && isCheckedList[index - 1]));
 
@@ -807,6 +994,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                         value: isCheckedList[index],
                         onChanged: isEnabled
                             ? (bool? value) {
+                                print("Checkbox $index changed to: $value");
                                 setState(() {
                                   isCheckedList[index] = value ?? false;
                                 });
@@ -822,7 +1010,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                         ),
                       ),
                       trailing: Text(
-                        "₹ ${fee.amount}",
+                        "₹ ${fee.amount.toStringAsFixed(2)}",
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -875,9 +1063,11 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                         padding: const EdgeInsets.all(16.0),
                         child: ElevatedButton(
                           onPressed: () async {
+                            print("Processing payment for ${fee.type}");
                             final prefs = await SharedPreferences.getInstance();
                             final studentId = prefs.getString('username');
                             if (studentId == null) {
+                              print("Error: Student ID not found");
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('Student ID not found')),
                               );
@@ -887,6 +1077,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                                     amountControllers[index].text) ??
                                 0;
                             if (paymentAmt <= 0) {
+                              print("Error: Invalid payment amount");
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                     content:
@@ -895,6 +1086,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                               return;
                             }
                             try {
+                              print("Sending payment request to API");
                               final response = await http.post(
                                 Uri.parse(
                                     "http://10.0.2.2:3000/students/students/payfees"),
@@ -905,29 +1097,41 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
                                   'paymentAmt': paymentAmt,
                                 }),
                               );
+                              print(
+                                  "Payment API Response: ${response.statusCode}");
+                              print("Response body: ${response.body}");
+
                               if (response.statusCode == 200) {
+                                print("Payment successful");
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
                                         'Payment successful for ${fee.type}'),
+                                    backgroundColor: Colors.green,
                                   ),
                                 );
                                 setState(() {
                                   isCheckedList[index] = false;
                                   amountControllers[index].clear();
+                                  // Refresh the data after payment
+                                  futureAdditionalFees = _fetchAdditionalFees();
                                 });
                               } else {
+                                print("Payment failed: ${response.body}");
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
                                         'Failed to process payment: ${response.body}'),
+                                    backgroundColor: Colors.red,
                                   ),
                                 );
                               }
                             } catch (e) {
+                              print("Payment error: $e");
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('Error: $e'),
+                                  backgroundColor: Colors.red,
                                 ),
                               );
                             }
@@ -962,6 +1166,17 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
   }
 
   Widget _buildDetailRow(String label, String? value, double screenHeight) {
+    // Format the value if it's a date string
+    String displayValue = value ?? 'N/A';
+    if (value != null && value.contains('T')) {
+      try {
+        final date = DateTime.parse(value);
+        displayValue = '${date.day}-${date.month}-${date.year}';
+      } catch (e) {
+        print('Error parsing date: $e');
+      }
+    }
+
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -977,7 +1192,7 @@ class _DetailsDisplayingScreenState extends State<DetailsDisplayingScreen>
           ),
           Expanded(
             child: Text(
-              value ?? 'N/A',
+              displayValue,
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
